@@ -120,10 +120,6 @@ Healthcheck: `GET http://localhost:3000/api/health` → `{status:"ok", db:"ok"}`
 | `AUTH_SECRET` | — | **Sim** (gere com `openssl rand -base64 32`) |
 | `APP_URL` | `http://localhost:3000` | Não |
 | `DEV_MODE` | `true` se `NODE_ENV != production` | Não |
-| `MONITOR_EMAILS` | — | **Sim** pra logar como monitor (csv) |
-| `MONITOR_PASSWORD` | — | **Sim** pra logar como monitor |
-| `RESEND_API_KEY` | — | Só em produção (DEV_MODE ignora) |
-| `FROM_EMAIL` | — | Só em produção |
 
 Detalhes completos: `.env.local.example`.
 
