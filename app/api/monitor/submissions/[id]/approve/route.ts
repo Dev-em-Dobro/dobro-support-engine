@@ -1,0 +1,60 @@
+import { NextResponse } from 'next/server';
+import { getSession } from '@/lib/session';
+import { asMonitor } from '@/lib/db-context';
+import { CorrectionDraftInput } from '@/lib/validators';
+import {
+  logMonitorAction,
+  setSubmissionStatus,
+  upsertCorrection,
+} from '@/lib/monitor-actions';
+import { generateAndStorePdf } from '@/lib/pdf';
+
+export const runtime = 'nodejs';
+
+export async function POST(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await getSession();
+  if (!session || session.role !== 'monitor') {
+    return NextResponse.json({ error: 'não autorizado' }, { status: 401 });
+  }
+
+  const json = await req.json().catch(() => null);
+  const parsed = CorrectionDraftInput.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'correção inválida', details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const now = new Date();
+  const storedId = await asMonitor(session.email, async (tx) => {
+    await upsertCorrection(tx, params.id, parsed.data, {
+      model: 'manual',
+      promptVersion: 'manual-v1',
+    });
+    await setSubmissionStatus(tx, params.id, 'approved', { correctedAt: now });
+    await logMonitorAction(tx, {
+      submissionId: params.id,
+      monitorEmail: session.email,
+      action: 'approve',
+      edits: parsed.data,
+    });
+    return params.id;
+  });
+
+  // Gera PDF e marca como entregue.
+  try {
+    await generateAndStorePdf(storedId, session.email);
+  } catch (err) {
+    console.error('[approve] PDF generation failed', err);
+    return NextResponse.json(
+      { ok: true, pdfError: err instanceof Error ? err.message : 'pdf falhou' },
+      { status: 200 }
+    );
+  }
+
+  return NextResponse.json({ ok: true });
+}

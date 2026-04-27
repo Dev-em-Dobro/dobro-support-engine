@@ -1,0 +1,252 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Martian+Mono:wght@400;600;700&family=Orbitron:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Ubuntu:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Brand tokens */
+  --dobro-roxo-primario: #6528d3;
+  --dobro-verde-acao: #6bb27c;
+  --dobro-verde-claro: #22c55e;
+  --dobro-cinza-escuro: #111111;
+  --dobro-cinza-claro: #1a1a1a;
+  --dobro-branco: #ededed;
+
+  /* Superfícies dark */
+  --dobro-bg: #111111;
+  --dobro-surface: #000000;
+  --dobro-surface-elev: #1a1a1a;
+  --dobro-border: #333333;
+  --dobro-border-strong: #444444;
+  --dobro-text: #ededed;
+  --dobro-text-muted: rgba(237, 237, 237, 0.72);
+  --dobro-text-faint: rgba(237, 237, 237, 0.45);
+}
+
+html,
+body {
+  color: var(--dobro-text);
+  background: var(--dobro-bg);
+  font-family: 'Ubuntu', 'Inter', 'Plus Jakarta Sans', sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Ubuntu', sans-serif;
+  font-weight: 700;
+  color: var(--dobro-verde-claro);
+}
+
+.font-mono {
+  font-family: 'Martian Mono', monospace !important;
+}
+
+.font-orbitron {
+  font-family: 'Orbitron', sans-serif !important;
+}
+
+/* ---------------------------------------------------------------------
+   Dark mode overrides
+   Colocados DEPOIS de @tailwind utilities pra vencer a cascata nas
+   classes utilitárias de mesma especificidade. Laranja/amarelo/azul
+   como fundos (botões, badges) ficam intactos — só inverto superfícies
+   e texto.
+   --------------------------------------------------------------------- */
+
+/* Superfícies claras → superfícies escuras */
+.bg-white,
+.bg-dobro-branco {
+  background-color: var(--dobro-surface) !important;
+}
+.bg-dobro-cinza-claro {
+  background-color: var(--dobro-surface-elev) !important;
+}
+
+/* Bordas suaves */
+.border-dobro-cinza-claro,
+.border-dobro-cinza-escuro\/10,
+.border-dobro-cinza-escuro\/15,
+.border-dobro-cinza-escuro\/20 {
+  border-color: var(--dobro-border) !important;
+}
+
+/* Texto escuro → texto claro */
+.text-dobro-cinza-escuro {
+  color: var(--dobro-text) !important;
+}
+.text-dobro-cinza-escuro\/50,
+.text-dobro-cinza-escuro\/60,
+.text-dobro-cinza-escuro\/70,
+.text-dobro-cinza-escuro\/80,
+.text-dobro-cinza-escuro\/85 {
+  color: var(--dobro-text-muted) !important;
+}
+
+/* Verde claro para texto e verde de ação para bordas */
+.text-dobro-azul {
+  color: var(--dobro-verde-claro) !important;
+}
+.border-dobro-azul {
+  border-color: var(--dobro-verde-acao) !important;
+}
+
+/* Hover ghost: fundo claro → fundo sutil translúcido */
+.hover\:bg-dobro-cinza-claro:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Callouts pastel (indigo-50, amber-50, red-50, blue-50, emerald-50)
+   ficariam ilhas pálidas em dark. Invertendo pra tom + borda da cor. */
+.bg-indigo-50 {
+  background-color: rgba(99, 102, 241, 0.12) !important;
+}
+.bg-amber-50 {
+  background-color: rgba(247, 181, 56, 0.1) !important;
+}
+.bg-red-50 {
+  background-color: rgba(220, 38, 38, 0.12) !important;
+}
+.bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.12) !important;
+}
+.bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+}
+
+/* Textos escuros dos callouts → clareados pra manter legibilidade */
+.text-indigo-900,
+.text-indigo-900\/80 {
+  color: #c7d2fe !important;
+}
+.text-amber-900,
+.text-amber-900\/80 {
+  color: #fde68a !important;
+}
+.text-red-900,
+.text-red-900\/80,
+.text-red-700 {
+  color: #fecaca !important;
+}
+
+/* Badges (bg-red-100 etc.) — bg mais escuro mantendo a cor */
+.bg-red-100 {
+  background-color: rgba(220, 38, 38, 0.18) !important;
+}
+.bg-amber-100 {
+  background-color: rgba(247, 181, 56, 0.18) !important;
+}
+.bg-blue-100 {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+}
+.bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+}
+.text-red-700,
+.text-red-800 {
+  color: #fca5a5 !important;
+}
+.text-amber-700,
+.text-amber-800 {
+  color: #fde68a !important;
+}
+.text-blue-700,
+.text-blue-800 {
+  color: #93c5fd !important;
+}
+.text-emerald-700,
+.text-emerald-800 {
+  color: #6ee7b7 !important;
+}
+
+/* Campos de formulário */
+input[type='text'],
+input[type='email'],
+input[type='number'],
+input[type='password'],
+input[type='url'],
+input:not([type]),
+textarea,
+select {
+  background-color: var(--dobro-surface-elev);
+  color: var(--dobro-text);
+  border-color: var(--dobro-border);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--dobro-text-faint);
+}
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--dobro-roxo-primario);
+  outline-offset: -1px;
+  border-color: var(--dobro-roxo-primario);
+}
+select option {
+  background-color: var(--dobro-surface-elev);
+  color: var(--dobro-text);
+}
+
+/* Blocos de código em HTML (não afeta o PDF, que já tem tema próprio) */
+pre,
+code {
+  background-color: var(--dobro-surface-elev);
+  color: var(--dobro-text);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--dobro-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* Seleção de texto → tom roxo translúcido */
+::selection {
+  background-color: rgba(101, 40, 211, 0.35);
+  color: var(--dobro-text);
+}
+
+/* ---------------------------------------------------------------------
+   Escopo "editor-surface" — opt-out do estilo global de inputs/textareas.
+   Usado em páginas onde os campos têm tratamento visual próprio
+   (backgrounds sutis em vez do surface-elev compartilhado).
+   --------------------------------------------------------------------- */
+.editor-surface input[type='text'],
+.editor-surface input[type='email'],
+.editor-surface input[type='number'],
+.editor-surface input[type='password'],
+.editor-surface input[type='url'],
+.editor-surface input:not([type]),
+.editor-surface textarea,
+.editor-surface select {
+  background-color: transparent;
+  border-color: transparent;
+}
+
+/* Focus mantém acento laranja, mas deixa a borda do utility (Tailwind) reger */
+.editor-surface input:focus-visible,
+.editor-surface textarea:focus-visible,
+.editor-surface select:focus-visible {
+  outline: none;
+  border-color: rgba(101, 40, 211, 0.55);
+  box-shadow: 0 0 0 3px rgba(101, 40, 211, 0.1);
+}
+
+/* Shimmer keyframe — usado em estados de loading (AI generate) */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}

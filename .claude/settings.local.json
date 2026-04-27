@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d/----- DEVQUEST/dobro-company-agents/docs/stories/dobro-support/**)",
+      "Read(//d/----- DEVQUEST/dobro-company-agents/docs/prd/**)",
+      "Bash(awk -F',' 'NR>1 {print $7}' \"D:/----- DEVQUEST/dobro-company-agents/dobro-support/docs/00 - QUESTS PLANILHA.xlsx - ENVIADOS.csv\")",
+      "Bash(tasklist)",
+      "Bash(netstat -ano)",
+      "Bash(cp /tmp/check_recent.ts \"D:/----- DEVQUEST/dobro-company-agents/dobro-support/scripts/check_recent.ts\")",
+      "Bash(npx tsx *)",
+      "Bash(curl -s -o /dev/null -w \"repo: HTTP %{http_code}\\\\n\" https://api.github.com/repos/Williaw-Al/todo-api-devquest)",
+      "Bash(curl -s https://api.github.com/repos/Williaw-Al/todo-api-devquest)",
+      "Bash(curl -s https://api.github.com/repos/Williaw-Al/todo-api-devquest/git/trees/main?recursive=1)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('files:', len\\([n for n in d.get\\('tree',[]\\) if n.get\\('type'\\)=='blob']\\)\\); print\\('truncated:', d.get\\('truncated'\\)\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(curl -s https://api.github.com/rate_limit)",
+      "Bash(npx tsc *)",
+      "Bash(git stash *)",
+      "Bash(time npm *)",
+      "Bash(npx prisma *)",
+      "Bash(DATABASE_URL=\"postgres://user:password@localhost:5432/todos-api\" timeout 8 npx tsx src/server.ts)",
+      "Bash(npm audit *)",
+      "Bash(npx eslint *)"
+    ]
+  }
+}
