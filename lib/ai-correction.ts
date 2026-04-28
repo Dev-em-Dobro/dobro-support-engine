@@ -39,7 +39,13 @@ const BLOB_FETCH_CONCURRENCY = 8;
 // Sem timeout, fetch do Node fica pendurado em socket lento e a função Vercel
 // é morta sem cair no catch — submission fica eternamente em "processing".
 const GITHUB_FETCH_TIMEOUT_MS = 15_000;
-const OPENAI_FETCH_TIMEOUT_MS = 75_000;
+// Writer (Pass 2) gera JSON denso (improvements + codeSnippet + proposedFix);
+// 75s tava ficando apertado em dias de OpenAI lenta — submissão caía em
+// "failed" com "operation was aborted due to timeout". 120s deixa margem
+// confortável dentro do maxDuration=300 da função.
+const OPENAI_WRITER_TIMEOUT_MS = 120_000;
+// Enumerator (Pass 1) tem output menor (max_tokens=6000); 90s é suficiente.
+const OPENAI_ENUMERATOR_TIMEOUT_MS = 90_000;
 
 const SKIP_PATH_PREFIXES = [
   'node_modules/',
@@ -468,6 +474,7 @@ async function enumerateIssues(
       temperature: 0.3,
       max_tokens: 6000,
     }),
+    signal: AbortSignal.timeout(OPENAI_ENUMERATOR_TIMEOUT_MS),
   });
 
   if (!res.ok) {
@@ -617,7 +624,7 @@ export async function generateCorrectionViaAI(input: {
       temperature: 0.5,
       max_tokens: 8000,
     }),
-    signal: AbortSignal.timeout(OPENAI_FETCH_TIMEOUT_MS),
+    signal: AbortSignal.timeout(OPENAI_WRITER_TIMEOUT_MS),
   });
 
   if (!res.ok) {
