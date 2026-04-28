@@ -5,6 +5,7 @@ import { asService } from '@/lib/db-context';
 import { submissions } from '@/drizzle/schema';
 import { SubmissionInput } from '@/lib/validators';
 import { processSubmissionWithAI } from '@/lib/ai-processor';
+import { checkSubmitRateLimit, getClientIp } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 // Student-facing response returns fast (~100ms); AI correction runs in background
@@ -15,6 +16,23 @@ export const runtime = 'nodejs';
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
+  // Rate limit por IP — endpoint público dispara pipeline de IA caro
+  // (~$0.05–$0.10 por submit). Sem freio, é vetor de cost-amplification:
+  // script trivial gera centenas de USD de custo OpenAI numa noite.
+  const ip = getClientIp(req);
+  const rl = await checkSubmitRateLimit(ip);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      {
+        error: 'muitos envios em pouco tempo. Tenta de novo daqui a alguns minutos.',
+      },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(rl.retryAfterSec) },
+      }
+    );
+  }
+
   const json = await req.json().catch(() => null);
   const parsed = SubmissionInput.safeParse(json);
   if (!parsed.success) {
@@ -43,6 +61,7 @@ export async function POST(req: Request) {
         // nem sabem que existiu. Em v1.2 esse valor será derivado de
         // challenge_id quando o aluno selecionar o desafio explicitamente.
         courseVersion: '2.0',
+        clientIp: ip,
       })
       .returning()
   );

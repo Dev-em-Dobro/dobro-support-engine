@@ -35,6 +35,7 @@ if (typeof WebSocket === 'undefined') {
 const MIGRATIONS = [
   'drizzle/migrations/0003_course_version.sql',
   'drizzle/migrations/0004_correction_costs.sql',
+  'drizzle/migrations/0005_security_hardening.sql',
 ];
 
 async function main() {

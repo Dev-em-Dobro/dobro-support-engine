@@ -22,6 +22,7 @@ import {
   numeric,
   integer,
   inet,
+  boolean,
   uniqueIndex,
   index,
   check,
@@ -125,6 +126,9 @@ export const submissions = pgTable(
     // só monitor enxerga no dashboard. Em v1.2 será derivado de challenge_id
     // quando a tabela challenges for criada.
     courseVersion: text('course_version').notNull().default('2.0'),
+    // IP do cliente que enviou. Usado pra rate limit em /api/correcoes/submit.
+    // Nullable porque rows antigas (pré-0005) não têm o dado.
+    clientIp: inet('client_ip'),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
@@ -141,6 +145,10 @@ export const submissions = pgTable(
     deliveredAtIdx: index('submissions_delivered_at_idx')
       .on(t.deliveredAt)
       .where(sql`delivered_at IS NOT NULL`),
+    clientIpRecentIdx: index('submissions_client_ip_recent_idx').on(
+      t.clientIp,
+      t.submittedAt.desc()
+    ),
     ghUrlChk: check(
       'submissions_github_url_chk',
       sql`github_url ~ '^https://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/?$'`
@@ -270,6 +278,18 @@ export const pdfs = pgTable(
   })
 );
 
+// ---------- monitor_users ----------
+// Substitui MONITOR_EMAILS + MONITOR_PASSWORD do env. Cada monitor tem
+// credencial própria com hash scrypt em password_hash. RLS service-only.
+// Bootstrap via scripts/add-monitor.ts.
+export const monitorUsers = pgTable('monitor_users', {
+  email: text('email').primaryKey(),
+  passwordHash: text('password_hash').notNull(),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+});
+
 // ---------- Relations ----------
 export const submissionsRelations = relations(submissions, ({ many, one }) => ({
   screenshots: many(screenshots),
@@ -324,3 +344,5 @@ export type AuthToken = typeof authTokens.$inferSelect;
 export type NewAuthToken = typeof authTokens.$inferInsert;
 export type AuthEvent = typeof authEvents.$inferSelect;
 export type NewAuthEvent = typeof authEvents.$inferInsert;
+export type MonitorUser = typeof monitorUsers.$inferSelect;
+export type NewMonitorUser = typeof monitorUsers.$inferInsert;

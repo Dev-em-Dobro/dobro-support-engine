@@ -34,16 +34,9 @@ export const env = {
   get DEV_MODE() {
     return bool('DOBRO_DEV_MODE', process.env.NODE_ENV !== 'production');
   },
-  // Monitor
-  get MONITOR_EMAILS() {
-    return (process.env.MONITOR_EMAILS || '')
-      .split(',')
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean);
-  },
-  get MONITOR_PASSWORD() {
-    return optional('MONITOR_PASSWORD');
-  },
+  // Monitor: credenciais ficam na tabela monitor_users (migrate 0005). Bootstrap
+  // via `npm run monitor:add -- --email=x@y.com --password=...`. MONITOR_EMAILS
+  // e MONITOR_PASSWORD do env foram removidas a partir de 2026-04-28.
   // Email — desabilitado por padrão (decisão Carlos 2026-04-25: correção é
   // entregue ao vivo no fluxo anônimo, login nominado por enquanto não vale
   // o custo do Resend). Pra reativar: setar DOBRO_EMAIL_ENABLED=true em prod.

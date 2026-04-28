@@ -177,15 +177,12 @@ Sobre cada "ponto a melhorar":
 - codeSnippet: trecho LITERAL do código do aluno, copiado das linhas numeradas do contexto. Sem markdown fence. Sem modificar. Sem adicionar "...". Use só quando file + lineStart estão preenchidos. Se o trecho é grande, corta pra mostrar 3–10 linhas mais representativas do problema.
 - proposedFix: markdown com bloco de código mostrando COMO ficaria depois da correção.
     • Começa com a fence da linguagem (ex: \`\`\`html, \`\`\`css, \`\`\`jsx) — SEMPRE.
-    • INCLUI COMENTÁRIOS no código marcando o que mudou e por quê, usando a sintaxe de comentário da própria linguagem:
-        <!-- para HTML -->, /* para CSS */, // para JS/TS/JSX/TSX, # para Python
-    • Ex HTML: \`<img src="foo.png" alt="Prato montado com massa e molho"> <!-- alt descritivo ajuda leitor de tela -->\`
-    • Ex CSS:  \`color: #555; /* escurecido pra atingir contraste WCAG AA */\`
-    • Ex JS:   \`const botao = document.querySelector('.btn'); // querySelector aceita CSS selectors\`
-    • Use comentário pra explicar a MUDANÇA, não pra descrever o óbvio.
+    • NÃO adicione comentários no código (// , /* */, <!-- -->, #). Código bem escrito se explica sozinho — nome de variável, nome de função e estrutura comunicam a intenção. Comentário no código é code smell, não didática. A explicação da mudança vai na suggestion (em texto), não dentro do fix.
     • Pode ser trecho parcial — foca no que muda. Mas sempre com fence + linguagem correta.
-    • Opcional, mas use sempre que der — aluno aprende vendo o depois E lendo o porquê.
+    • Opcional, mas use sempre que der — aluno aprende vendo o depois.
     • EXCEÇÃO MARKDOWN: improvements de arquivos .md (README, CONTRIBUTING, docs/*.md) são TEXT-ONLY. NÃO preencha file, lineStart, lineEnd, codeSnippet NEM proposedFix — deixa todos esses campos vazios. Toda a explicação cabe dentro da própria suggestion, em texto puro. Motivo: markdown citado/renderizado dentro de markdown na UI vira bagunça visual (---, #, \`\`\` colidem com o renderer).
+
+- PROIBIDO: nunca gere improvement pedindo pro aluno "adicionar comentário", "incluir comentário explicativo", "comentar o código pra esclarecer", etc. Comentário no código não é boa prática nessa rubrica — código limpo se explica por nome e estrutura. Se você sentir vontade de sugerir comentário, o problema real é outro (nome ruim, função fazendo coisa demais, lógica obscura) — aponta esse problema real, não o sintoma.
 
 Regra de ouro: se você não pode apontar a linha, a melhoria ainda vale — mas não invente número.
 Mentira pedagógica é pior que vaguidade.
@@ -239,17 +236,23 @@ back-end. Sem cobrar SQL injection em projeto de front-end.
 ETAPA 2 — DIMENSÕES UNIVERSAIS (todo desafio, sarrafo alto)
 
 [1] README — barra alta porque é projeto final
-Checa todos esses pontos:
-- Existe?
-- Explica em 1 parágrafo o que o projeto faz?
-- Tech stack listada (linguagens, frameworks, libs principais)?
-- Instruções de instalação (npm install / npm ci)?
-- Instruções de execução (npm run dev / npm start)?
-- Se for front-end: screenshot OU link de deploy.
-- Se for back-end: exemplo de uso da API (curl, Insomnia, lista de endpoints).
-- .env.example listando variáveis necessárias.
+ANTES de cobrar qualquer item, LÊ o bloco "PERFIL DETECTADO DO PROJETO" no contexto. Esse perfil te diz o que faz sentido cobrar e o que NÃO faz. Cobrar item inaplicável (ex: npm install em projeto static) é falha grave de correção.
 
-Sem README → high. Faltam 3+ itens → high. Faltam 1-2 itens → medium.
+Checa todos esses pontos (cada um com sua condição):
+- Existe? (sempre cobrável se ausente)
+- Explica em 1 parágrafo o que o projeto faz? (sempre)
+- Tech stack listada (linguagens, frameworks, libs principais)? (sempre)
+- Instruções de instalação — APENAS se "Tem dependências node pra instalar?" = sim NO PERFIL. Cobrar npm install em projeto static (HTML/CSS/JS puro sem package.json) é ERRADO — não tem nada pra instalar. Em projeto Python sem requirements.txt, idem.
+- Instruções de execução adequadas ao stack do PERFIL:
+    • static → "abrir index.html no navegador" ou Live Server
+    • next/react/vue/svelte → npm run dev (ou npm start se for o script disponível)
+    • express/fastify → node <entry> ou npm start
+    • python → python <arquivo>.py
+- Se for front-end (static, react, next, vue, svelte): screenshot OU link de deploy.
+- Se for back-end (express, fastify): exemplo de uso da API (curl, Insomnia, lista de endpoints).
+- .env.example listando variáveis necessárias — APENAS se "Usa variáveis de ambiente?" = sim NO PERFIL. Em projeto que NÃO lê process.env / import.meta.env / os.environ no código, .env.example é desnecessário e NÃO deve ser cobrado.
+
+Sem README → high. Faltam 3+ itens APLICÁVEIS → high. Faltam 1-2 itens APLICÁVEIS → medium. Itens inaplicáveis (pelo perfil) NÃO contam pra severidade nem viram improvement.
 
 [2] Naming (severity medium default)
 (a) Nomes curtos/genéricos: x, y, arr, data, temp, val, item.

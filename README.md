@@ -57,14 +57,14 @@ cp .env.local.example .env.local
 # edite .env.local:
 #   DATABASE_URL=postgresql://...pooler...sslmode=require
 #   AUTH_SECRET=<gere com `openssl rand -base64 32`>
-#   MONITOR_EMAILS=voce@devemdobro.com
-#   MONITOR_PASSWORD=qualquer-senha-forte
+# (credenciais de monitor ficam no banco — ver passo 5 abaixo)
 ```
 
 ### 3. Aplicar migrations + seed opcional
 
 ```bash
 pnpm db:init        # cria enums, tabelas, RLS (não-idempotente; rode em DB vazio)
+pnpm db:migrate     # aplica migrations idempotentes (0003+)
 pnpm drizzle:seed   # popula 3 submissões de exemplo
 ```
 
@@ -73,6 +73,20 @@ pnpm drizzle:seed   # popula 3 submissões de exemplo
 ```bash
 pnpm dev
 # http://localhost:3000
+```
+
+### 5. Cadastrar um monitor
+
+Credenciais de monitor ficam na tabela `monitor_users` (hash scrypt). Bootstrap via CLI:
+
+```bash
+npm run monitor:add -- --email=voce@devemdobro.com --password='senhaForte123'
+
+# Rotação: rodar de novo com mesma email + nova senha atualiza o hash.
+# Desativar sem deletar (preserva audit em monitor_actions):
+npm run monitor:add -- --email=voce@devemdobro.com --deactivate
+# Reativar:
+npm run monitor:add -- --email=voce@devemdobro.com --activate
 ```
 
 Healthcheck: `GET http://localhost:3000/api/health` → `{status:"ok", db:"ok"}`.
@@ -90,7 +104,7 @@ Healthcheck: `GET http://localhost:3000/api/health` → `{status:"ok", db:"ok"}`
 ### Monitor
 
 1. Em outra aba (ou janela anônima): `http://localhost:3000/monitor/login`
-2. Usa `MONITOR_EMAILS[0]` + `MONITOR_PASSWORD`
+2. Usa o email + senha cadastrados via `npm run monitor:add` (passo 5 do setup)
 3. Dashboard mostra a submissão na aba **Pendentes**
 4. Clica **Abrir →**, preenche nota/pontos/feedback
 5. **Aprovar e entregar** → PDF é gerado e status vira `delivered`
