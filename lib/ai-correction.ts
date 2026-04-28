@@ -28,7 +28,7 @@ import { buildUsage, sumUsage, type UsageReport } from './cost';
 
 const GITHUB_URL_REGEX = /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+?)\/?$/;
 const OPENAI_MODEL = 'gpt-4o-mini';
-const PROMPT_VERSION = 'v6-2026-04';
+const PROMPT_VERSION = 'v9-2026-04';
 
 // File content budget — keeps us well under gpt-4o-mini's 128k token context
 const MAX_FILES = 60;
@@ -128,6 +128,28 @@ interface RepoFile {
   totalLines: number;
 }
 
+interface ProjectProfile {
+  // Stack detectada por package.json + extensão de arquivos. Determina quais
+  // checagens de README fazem sentido (npm install só em projeto Node, etc).
+  stack:
+    | 'static'        // HTML/CSS/JS puro, sem package.json
+    | 'next'          // Next.js
+    | 'react'         // React (CRA, Vite, etc) sem framework superior
+    | 'vue'
+    | 'svelte'
+    | 'express'
+    | 'fastify'
+    | 'node'          // Node sem framework reconhecido
+    | 'python'
+    | 'unknown';
+  hasPackageJson: boolean;
+  hasNodeDependencies: boolean;
+  usesEnvVars: boolean;
+  envVarSamples: string[]; // Caminhos de até 5 arquivos onde process.env etc apareceu
+  installCommand: string | null;       // null quando não tem o que instalar
+  runCommandSuggestion: string;        // Como o aluno deveria rodar localmente
+}
+
 interface RepoContext {
   owner: string;
   repo: string;
@@ -140,6 +162,7 @@ interface RepoContext {
   filesFetched: number;
   filesSkipped: number;
   deployedUrl: string | null;
+  profile: ProjectProfile;
 }
 
 function parseGithubUrl(url: string): { owner: string; repo: string } {
@@ -220,6 +243,113 @@ async function fetchInBatches<T, R>(
     out.push(...results);
   }
   return out;
+}
+
+/**
+ * Detecta stack + se o projeto realmente precisa de .env / npm install.
+ *
+ * O propósito é alimentar o prompt com contexto verificável pra IA não cobrar
+ * artefatos inexistentes (npm install num projeto static, .env.example num
+ * projeto sem process.env). Detecção é HEURÍSTICA — quando incerto, vira
+ * 'unknown' e o prompt deixa a IA usar o próprio julgamento.
+ */
+function detectProjectProfile(files: RepoFile[]): ProjectProfile {
+  const pkgFile = files.find(
+    (f) => f.path === 'package.json' || f.path.endsWith('/package.json')
+  );
+
+  let pkg: {
+    dependencies?: Record<string, unknown>;
+    devDependencies?: Record<string, unknown>;
+    scripts?: Record<string, string>;
+  } | null = null;
+  if (pkgFile) {
+    try {
+      pkg = JSON.parse(pkgFile.content);
+    } catch {
+      pkg = null;
+    }
+  }
+
+  const deps = {
+    ...(pkg?.dependencies ?? {}),
+    ...(pkg?.devDependencies ?? {}),
+  } as Record<string, unknown>;
+  const depKeys = Object.keys(deps);
+  const hasPackageJson = !!pkgFile;
+  const hasNodeDependencies = depKeys.length > 0;
+
+  // Stack detection — checa frameworks na ordem mais específica primeiro
+  let stack: ProjectProfile['stack'] = 'unknown';
+  if (hasPackageJson) {
+    if ('next' in deps) stack = 'next';
+    else if ('react' in deps || 'react-dom' in deps) stack = 'react';
+    else if ('vue' in deps) stack = 'vue';
+    else if ('svelte' in deps || '@sveltejs/kit' in deps) stack = 'svelte';
+    else if ('express' in deps) stack = 'express';
+    else if ('fastify' in deps) stack = 'fastify';
+    else stack = 'node';
+  } else {
+    const hasHtml = files.some(
+      (f) => f.path.endsWith('.html') || f.path.endsWith('.htm')
+    );
+    const hasPy = files.some((f) => f.path.endsWith('.py'));
+    if (hasPy && !hasHtml) stack = 'python';
+    else if (hasHtml) stack = 'static';
+  }
+
+  // Env var usage — varre conteúdo dos arquivos por padrões reais de leitura
+  // de env. Comentário mencionando ".env" não conta — só uso de fato.
+  const envPatterns = [
+    /\bprocess\.env\.[A-Z_][A-Z0-9_]*/,
+    /\bprocess\.env\[/,
+    /\bimport\.meta\.env\./,
+    /\bos\.environ(\.get)?\b/,
+    /\bos\.getenv\b/,
+    /\bDeno\.env\.get\b/,
+  ];
+  const envVarSamples: string[] = [];
+  for (const f of files) {
+    if (envPatterns.some((p) => p.test(f.content))) {
+      envVarSamples.push(f.path);
+      if (envVarSamples.length >= 5) break;
+    }
+  }
+  const usesEnvVars = envVarSamples.length > 0;
+
+  // Run/install commands — derivados do stack
+  const installCommand = hasNodeDependencies
+    ? 'npm install'
+    : stack === 'python'
+      ? 'pip install -r requirements.txt (se houver)'
+      : null;
+
+  let runCommandSuggestion: string;
+  const scripts = pkg?.scripts ?? {};
+  if (stack === 'static') {
+    runCommandSuggestion =
+      'abrir index.html direto no navegador (ou usar a extensão Live Server do VS Code)';
+  } else if (scripts.dev) {
+    runCommandSuggestion = 'npm run dev';
+  } else if (scripts.start) {
+    runCommandSuggestion = 'npm start';
+  } else if (stack === 'python') {
+    runCommandSuggestion = 'python <arquivo principal>.py';
+  } else if (stack === 'express' || stack === 'fastify') {
+    runCommandSuggestion = 'node <arquivo de entrada> (ou npm start se script existir)';
+  } else {
+    runCommandSuggestion = '(stack desconhecido — verificar README/scripts)';
+  }
+
+  return {
+    stack,
+    hasPackageJson,
+    hasNodeDependencies,
+    usesEnvVars,
+    envVarSamples,
+    installCommand,
+    runCommandSuggestion,
+  };
 }
 
 async function fetchRepoContext(
@@ -304,6 +434,8 @@ async function fetchRepoContext(
     totalChars += text.length;
   }
 
+  const profile = detectProjectProfile(files);
+
   return {
     owner,
     repo,
@@ -316,6 +448,7 @@ async function fetchRepoContext(
     filesFetched: files.length,
     filesSkipped,
     deployedUrl,
+    profile,
   };
 }
 
@@ -379,6 +512,47 @@ function buildSystemPrompt(): string {
     '- Fragmento solto força o aluno a virar detetive (onde coloco? antes de qual linha? dentro de qual if?). Contexto elimina essa dúvida.',
     '',
     'ATENÇÃO MÁXIMA: NUNCA invente número de linha, nome de arquivo ou trecho de código. Se não tem certeza, deixa file/lineStart/codeSnippet em branco e vira uma observação geral.',
+    '',
+    'REGRA ANTI-COMENTÁRIO (forte):',
+    '- NÃO gere improvement pedindo pro aluno "adicionar comentário", "comentar o código", "incluir comentário explicativo" ou variações. Comentário no código não é boa prática nessa rubrica.',
+    '- NÃO inclua comentários (//, /* */, <!-- -->, #) dentro do proposedFix. O fix é só código — a explicação fica na suggestion, em texto.',
+    '- Se o auditor enumerou um issue desse tipo, IGNORA esse issue (não vira improvement). Se você vê o sintoma "código difícil de entender", mira no problema real (nome ruim, função grande, lógica obscura) — não no comentário ausente.',
+    '',
+    'REGRA DE COBRANÇA POR STACK (use o "PERFIL DETECTADO DO PROJETO" do contexto):',
+    '- NÃO gere improvement cobrando "npm install" / "como instalar dependências" se o perfil diz "Tem dependências node? NÃO".',
+    '- NÃO gere improvement cobrando ".env.example" / "documentar variáveis de ambiente" / "criar .env" se o perfil diz "Usa variáveis de ambiente? NÃO".',
+    '- NÃO gere improvement sugerindo "npm run dev" / "scripts de build" / configurar bundler em projeto com Stack=static.',
+    '- Se o auditor (Pass 1) enumerou um desses por engano, DESCARTA — não vira improvement. Cobrança inaplicável é pior que cobrança ausente: o aluno fica perdido tentando fazer algo que não faz sentido.',
+    '- Comando de execução cobrável é o "Comando de execução sugerido" do perfil. Em static, é abrir o HTML — citar Live Server ou double-click no arquivo é correto, "npm run dev" não.',
+    '',
+    'REGRA ANTI-ESPECULAÇÃO (improvement é AFIRMAÇÃO, não pergunta):',
+    '- PROIBIDO usar "verifica se", "confirma se", "talvez", "pode estar", "é possível que", "se for o caso", "caso seja necessário" pra abrir um improvement. O aluno não tá aqui pra investigar dúvida sua — ou você confirmou que é problema, ou você não cita.',
+    '- Path/arquivo referenciado: o contexto te entrega a LISTA COMPLETA dos arquivos do repo. ANTES de cobrar "esse arquivo pode não existir", PROCURA na lista. Se existe, não cita. Se não existe, afirma diretamente: "O index.html referencia ./images/favicon-32x32.png na linha 8, mas esse arquivo não está no repositório — o favicon não vai aparecer."',
+    '- Versão/conteúdo de recurso EXTERNO (CDN, link pra imagem em outro domínio, biblioteca de terceiro): NUNCA cite "verifica se a versão é a mais recente" — você não tem como saber, e o aluno também não quer caçar isso. A única exceção é versão claramente abandonada que VOCÊ identifica pelo número (ex: jQuery 1.x, React 15) — aí afirma direto.',
+    '- "Pode causar problemas se X" sem evidência concreta: descarta. Só vira improvement quando você CONSEGUE apontar o efeito real no código que tá vendo.',
+    '- REGRA DE OURO (do dono do produto): "se não souber, é melhor não colocar nada". Lista de improvements curta e correta vale infinitamente mais que lista longa com chute. Na MENOR dúvida sobre se é problema real → DESCARTA o improvement. Aluno enxerga IA chutando uma vez e perde confiança em todas as outras correções.',
+    '',
+    'SEVERITY — CALIBRAÇÃO ESTRITA (use essa régua, não infla):',
+    '- "high" = bug ativo, código quebrado, segurança real. Exemplos: chave de API hardcoded, SQL injection, await esquecido em chamada crítica, useEffect com loop infinito, app crasha em caso comum, .env commitado no repo, fetch sem tratamento de erro deixando UI quebrada.',
+    '- "medium" = boa prática que faz diferença real na manutenção/UX/acessibilidade. Exemplos: img sem alt, falta de loading state, naming ruim em arquivo central, mistura PT/EN, useState em vez de useReducer pra estado complexo, falta de validação de input no back-end, README sem exemplo de uso.',
+    '- "low" = polimento, organização, micro-otimização. Exemplos: nome de variável poderia ser melhor (mas é entendível), espaçamento inconsistente, classe CSS com nome genérico, link de favicon com path duvidoso, ordem dos imports, file solto que poderia ir pra subpasta.',
+    '- Default: na dúvida entre low e medium, é low. Na dúvida entre medium e high, é medium. INFLAR severity dilui o sinal pro aluno — ele vai achar tudo "crítico" e ignorar TUDO.',
+    '',
+    'AREA — TAXONOMIA (use uma dessas, não invente nem misture):',
+    '- "segurança" — RESERVADO pra: chave/token/senha exposta, .env commitado, SQL injection, XSS, CORS aberto sem motivo, autenticação quebrada. NUNCA pra favicon, asset, versão de lib, link externo.',
+    '- "acessibilidade" — alt, aria-label, label de form, contraste, ordem de heading.',
+    '- "html semântico" — uso de div onde cabia header/main/section/article/nav.',
+    '- "css" / "css responsivo" — media query, unidades, especificidade, layout.',
+    '- "naming" — nomes curtos/genéricos, mistura de idiomas, verbosidade redundante.',
+    '- "dead code" — console.log, código comentado, import não usado.',
+    '- "estrutura" — organização de pastas, arquivos soltos.',
+    '- "react" / "estado" / "componentização" — específicas de React.',
+    '- "tratamento de erro" — try/catch ausente, .catch ausente, res.ok não checado.',
+    '- "loading state" / "error state" / "empty state" — UX do fetch.',
+    '- "validação" — input sem validar (back-end ou form).',
+    '- "README" — qualquer item da rubrica de README.',
+    '- "assets" — favicon, imagens locais, fontes self-hosted (path quebrado, etc).',
+    '- "polimento" — qualquer outra coisa de baixa relevância. Use livremente quando nada acima encaixa, em vez de forçar área errada.',
   ].join('\n');
 }
 
@@ -431,6 +605,26 @@ function buildEnumeratorSystem(): string {
     '- Async: await esquecido',
     '',
     'REGRA: nunca invente. Cada issue tem que apontar pra trecho REAL do código. Se não tem certeza, não inclui.',
+    '',
+    'PROIBIDO ENUMERAR: "falta comentário", "código sem comentário explicativo", "adicionar comentário pra esclarecer", ou qualquer variação. Comentário no código NÃO é boa prática nessa rubrica — código limpo se explica por nome de variável/função e estrutura. Se você sente que falta comentário, o problema real é nome ruim, função fazendo coisa demais ou lógica obscura — enumera ESSE problema, não o sintoma "falta comentário".',
+    '',
+    'PROIBIDO ENUMERAR (cobrança INAPLICÁVEL ao stack):',
+    '- O contexto te entrega um bloco "PERFIL DETECTADO DO PROJETO". USE esse perfil pra filtrar o que vale cobrar.',
+    '- Se o perfil diz "Tem dependências node? NÃO" → NÃO enumera "falta npm install no README", "falta como instalar dependências", etc. Não tem o que instalar.',
+    '- Se o perfil diz "Usa variáveis de ambiente? NÃO" → NÃO enumera "falta .env.example", "criar arquivo .env", "documentar variáveis de ambiente", etc. O projeto não usa env.',
+    '- Se o perfil diz "Stack: static" → NÃO enumera "falta npm run dev/start", "configurar bundler/build", "package.json mal configurado". O projeto roda abrindo o HTML.',
+    '- Cobrar artefato que não pertence ao stack é falha de auditoria. Confia no perfil — ele foi derivado de scan real do código (busca por process.env, parse de package.json, etc).',
+    '',
+    'PROIBIDO ESPECULAR — issue é AFIRMAÇÃO, não pergunta:',
+    '- NÃO enumere "verifica se X", "confirma se Y existe", "talvez esteja desatualizado", "pode estar quebrado". Issue só entra se você TEM CERTEZA olhando pro código.',
+    '- Path de asset (img, favicon, font local, css/js linkado): o contexto contém a LISTA COMPLETA DE ARQUIVOS DO REPOSITÓRIO. Antes de enumerar "esse arquivo pode não existir", PROCURA na lista. Se existe, não enumera. Se não existe, enumera afirmando: "linha 8 referencia ./images/favicon-32x32.png mas esse arquivo não está no repo".',
+    '- Recurso EXTERNO (CDN, link externo, versão de biblioteca de terceiro): NÃO enumere "verifica se a versão é a mais recente", "confirma se o link ainda funciona", etc. Você não tem como saber, e nem o aluno deveria perder tempo investigando isso. Exceção única: versão CLARAMENTE abandonada que dá pra reconhecer pelo número (ex: jQuery 1.x, React 15, Node 12) — aí enumera afirmando.',
+    '- REGRA DE OURO: na menor dúvida sobre se um issue é real, NÃO ENUMERA. Lista honesta e curta vale mais que lista cheia com chute. O writer não tem como filtrar o que você inventou.',
+    '',
+    'PROIBIDO ROTULAR como "segurança" (categoria reservada):',
+    '- "segurança" só aparece quando é REALMENTE problema de segurança: chave/token/senha exposta no código, .env commitado, SQL injection (string concat numa query), XSS (innerHTML com dado de usuário não escapado), CORS aberto sem critério, autenticação quebrada, hash fraco em senha.',
+    '- Path de favicon, link de CDN, versão de lib externa, asset faltando — NÃO é segurança. Se quiser apontar, usa categoria correta (assets, polimento, README) e severity baixa/média.',
+    '- Confunde categoria = aluno acha que tem buraco de segurança quando não tem. Custo de credibilidade alto.',
     '',
     'OUTPUT FORMAT (JSON estrito):',
     '{',
@@ -513,6 +707,31 @@ async function enumerateIssues(
 
 // ---------- File context (compartilhado entre Pass 1 e Pass 2) ----------
 
+function stackDescription(stack: ProjectProfile['stack']): string {
+  switch (stack) {
+    case 'static':
+      return ' (HTML/CSS/JS puro, sem package.json — não tem dependências, não tem build, não tem .env)';
+    case 'next':
+      return ' (Next.js — usa npm install + npm run dev)';
+    case 'react':
+      return ' (React — usa npm install + npm run dev/start)';
+    case 'vue':
+      return ' (Vue)';
+    case 'svelte':
+      return ' (Svelte)';
+    case 'express':
+      return ' (Express — back-end Node)';
+    case 'fastify':
+      return ' (Fastify — back-end Node)';
+    case 'node':
+      return ' (Node sem framework reconhecido — verifique scripts)';
+    case 'python':
+      return ' (Python)';
+    case 'unknown':
+      return ' (stack não identificado com certeza — use os arquivos pra inferir)';
+  }
+}
+
 function buildFileContextPrompt(ctx: RepoContext): string {
   const header = [
     `Repositório: ${ctx.owner}/${ctx.repo}`,
@@ -520,6 +739,29 @@ function buildFileContextPrompt(ctx: RepoContext): string {
     ctx.primaryLanguage ? `Linguagem principal: ${ctx.primaryLanguage}` : null,
     ctx.deployedUrl ? `Deploy: ${ctx.deployedUrl}` : null,
     `Arquivos no repo: ${ctx.totalFilesInRepo} (${ctx.filesFetched} incluídos abaixo, ${ctx.filesSkipped} pulados por serem binário/dependência/lock)`,
+    '',
+    '--- PERFIL DETECTADO DO PROJETO (use isso pra calibrar suas cobranças) ---',
+    `Stack: ${ctx.profile.stack}${stackDescription(ctx.profile.stack)}`,
+    `Tem package.json? ${ctx.profile.hasPackageJson ? 'sim' : 'NÃO'}`,
+    `Tem dependências node pra instalar? ${ctx.profile.hasNodeDependencies ? 'sim' : 'NÃO'}`,
+    `Usa variáveis de ambiente (process.env / import.meta.env / os.environ)? ${
+      ctx.profile.usesEnvVars
+        ? `sim — encontradas em: ${ctx.profile.envVarSamples.join(', ')}`
+        : 'NÃO — nenhum uso real de env detectado no código'
+    }`,
+    `Comando de instalação aplicável: ${ctx.profile.installCommand ?? 'NENHUM (nada pra instalar)'}`,
+    `Comando de execução sugerido: ${ctx.profile.runCommandSuggestion}`,
+    '',
+    'IMPLICAÇÕES DIRETAS pra cobrança de README:',
+    ctx.profile.hasNodeDependencies
+      ? '- Pode cobrar instruções de "npm install" no README (tem dependências reais).'
+      : '- NÃO cobre "npm install" / "como instalar dependências" — não existe nada pra instalar nesse projeto.',
+    ctx.profile.usesEnvVars
+      ? `- Pode cobrar .env.example (o código realmente lê env vars em ${ctx.profile.envVarSamples[0]}).`
+      : '- NÃO cobre .env.example / "criar variáveis de ambiente" — o projeto NÃO usa env vars no código.',
+    ctx.profile.stack === 'static'
+      ? '- Projeto static (HTML/CSS/JS puro): comando de execução é abrir index.html — NÃO cobre "npm run dev" / "npm start".'
+      : '- Comando de execução cobrável é o do stack detectado (ver acima).',
     '',
     '--- README ---',
     ctx.readme || '(sem README)',
@@ -709,7 +951,11 @@ function normalizeAIOutput(raw: unknown): unknown {
     // ou string parseável; dropa qualquer outra coisa (NaN, decimal, <= 0).
     for (const k of ['lineStart', 'lineEnd'] as const) {
       const v = i[k];
-      if (v === undefined || v === null) continue;
+      if (v === undefined) continue;
+      if (v === null) {
+        delete i[k];
+        continue;
+      }
       const n = typeof v === 'number' ? v : parseInt(String(v), 10);
       if (Number.isInteger(n) && n > 0) {
         i[k] = n;
