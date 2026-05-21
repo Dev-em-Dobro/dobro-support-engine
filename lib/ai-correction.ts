@@ -854,6 +854,8 @@ function buildNarratorSystem(): string {
     '- Fecha incentivando o próximo passo concreto.',
     '- Não copia frases literais das listas — escreve com suas palavras.',
     '',
+    'GÊNERO NEUTRO (obrigatório): você NÃO sabe o gênero de quem fez o desafio. Nunca use adjetivo ou particípio flexionado em gênero pra se referir ao aluno ("preparado/preparada", "pronto/pronta", "focado/focada", "perdido/perdida", "animado/animada"). Reescreve a frase pra ficar neutra: "você tem base", "você manda bem", "dá pra ver seu preparo", "segue firme". Trata sempre por "você"; nunca escreve "o aluno" nem "a aluna".',
+    '',
     DNA_GEMEOS,
     '',
     'FORMATO DE RESPOSTA (JSON estrito): { "narrativeMd": "texto da narrativa" }',

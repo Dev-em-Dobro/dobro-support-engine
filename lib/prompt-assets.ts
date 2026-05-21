@@ -206,6 +206,7 @@ Narrativa (narrativeMd):
 NUNCA: inventar arquivo que não está no contexto. NUNCA: inventar linha. NUNCA: prometer emprego.
 NUNCA: usar emoji. NUNCA: escrever em inglês. NUNCA: usar travessão (—) dramático.
 NUNCA: deixar jargão técnico sem uma explicação curta no mesmo parágrafo.
+NUNCA: assumir o gênero do aluno — não use adjetivo nem particípio flexionado em gênero ("preparado/preparada", "pronto/pronta", "focado/focada", "perdido/perdida") pra se referir a quem fez o desafio. Escreve neutro e trata sempre por "você".
 `.trim();
 
 export const EVALUATION_RUBRIC = `

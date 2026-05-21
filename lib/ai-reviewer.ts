@@ -85,6 +85,8 @@ function buildPolishSystem(): string {
     '9. Improvement ESPECULATIVO ("verifica se", "talvez", "pode estar") → DESCARTA.',
     '   Princípio do dono do produto: "se não souber, é melhor não colocar nada". Improvement tem que ser AFIRMAÇÃO, nunca pergunta. Se o rascunho tem improvement abrindo com "verifica se X existe / é a versão mais recente / etc", remove (essa é exceção legítima ao "NUNCA reduz quantidade", junto com duplicata exata e improvement de comentário).',
     '',
+    '10. GÊNERO — neutraliza. Você não sabe o gênero do aluno. Se o rascunho usa adjetivo ou particípio flexionado em gênero pra se referir a quem fez o desafio ("preparado/preparada", "pronto/pronta", "focado/focada", "perdido/perdida"), REESCREVE pra forma neutra ("tem base", "manda bem", "segue firme"). Trata sempre por "você"; nunca "o aluno" nem "a aluna". Vale pra narrativeMd, suggestions e strengths.',
+    '',
     '=== O QUE VOCÊ NÃO PODE FAZER ===',
     '',
     '- NUNCA invente nome de arquivo, número de linha ou conteúdo de codeSnippet que não esteja no rascunho original.',
