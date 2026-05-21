@@ -27,10 +27,16 @@ import {
 import { buildUsage, sumUsage, type UsageReport } from './cost';
 
 const GITHUB_URL_REGEX = /^https:\/\/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+?)\/?$/;
-const OPENAI_MODEL = 'gpt-4o-mini';
-const PROMPT_VERSION = 'v9-2026-04';
+// gpt-4o (não o mini): o mini tratava a rubrica como checklist e cobrava itens
+// que já existiam no repo (ex: "falta exemplo de uso no README" num README que
+// já tinha a seção de Endpoints). gpt-4o verifica o conteúdo antes de afirmar.
+// Custo sobe de ~$0,02 pra ~$0,30 por correção — irrelevante no volume atual.
+const OPENAI_MODEL = 'gpt-4o';
+// v10: narrativa virou passo separado (Pass 3) + camada determinística que
+// descarta falsos positivos verificáveis contra o repo.
+const PROMPT_VERSION = 'v10-2026-05';
 
-// File content budget — keeps us well under gpt-4o-mini's 128k token context
+// File content budget — keeps us well under gpt-4o's 128k token context
 const MAX_FILES = 60;
 const MAX_CHARS_PER_FILE = 8000;
 const MAX_TOTAL_CHARS = 250_000;
@@ -46,6 +52,8 @@ const GITHUB_FETCH_TIMEOUT_MS = 15_000;
 const OPENAI_WRITER_TIMEOUT_MS = 120_000;
 // Enumerator (Pass 1) tem output menor (max_tokens=6000); 90s é suficiente.
 const OPENAI_ENUMERATOR_TIMEOUT_MS = 90_000;
+// Narrator (Pass 3) só resume listas curtas (max_tokens=800); 60s sobra.
+const OPENAI_NARRATOR_TIMEOUT_MS = 60_000;
 
 const SKIP_PATH_PREFIXES = [
   'node_modules/',
@@ -820,6 +828,111 @@ function buildWriterUserPrompt(
   return [baseContext, ...enumerationBlock, ...footer].join('\n');
 }
 
+// ---------- Pass 3: Narrator ----------
+// A narrativeMd vinha junto na saída do writer — que redigia o fechamento
+// olhando o repo direto e às vezes introduzia cobrança que não estava em
+// improvement nenhum (ex: "falta exemplo de uso no README"). O narrator
+// recebe SÓ a lista final já filtrada (improvements + strengths), sem o
+// repo. Logo, é estruturalmente incapaz de inventar issue novo: só resume
+// o que existe. O writer continua gerando narrativeMd — usada como fallback.
+
+function buildNarratorSystem(): string {
+  return [
+    'Você é um professor da Dev em Dobro escrevendo o parágrafo de fechamento (a "narrativa") de uma correção de desafio DevQuest.',
+    '',
+    'Você recebe a NOTA, a lista final de PONTOS A MELHORAR e a lista de PONTOS FORTES dessa correção. Você NÃO viu o repositório do aluno — só essas listas.',
+    '',
+    'REGRA CRÍTICA E INVIOLÁVEL:',
+    '- Você só pode falar do que JÁ ESTÁ nas listas que recebeu. NUNCA introduza um problema, cobrança, sugestão ou observação que não esteja na lista de pontos a melhorar.',
+    '- Você está RESUMINDO e dando ânimo — não auditando. Se algo não está na lista, pra você não existe.',
+    '- Exemplo PROIBIDO: a lista não menciona o README, e mesmo assim você escreve "o README poderia ter exemplos de uso". Isso é inventar cobrança. Não faça.',
+    '',
+    'FORMATO:',
+    '- 80 a 200 palavras. Markdown leve (parágrafos, ** raro pra ênfase). Sem cabeçalho, sem lista, sem emoji.',
+    '- Abre com a impressão geral do desafio, levando em conta a nota e os pontos fortes.',
+    '- No meio, dá a visão de conjunto dos pontos a melhorar SEM repetir item por item.',
+    '- Fecha incentivando o próximo passo concreto.',
+    '- Não copia frases literais das listas — escreve com suas palavras.',
+    '',
+    DNA_GEMEOS,
+    '',
+    'FORMATO DE RESPOSTA (JSON estrito): { "narrativeMd": "texto da narrativa" }',
+    'Retorne SOMENTE esse JSON.',
+  ].join('\n');
+}
+
+function buildNarratorUser(c: CorrectionDraftInputT): string {
+  const lines: string[] = [`Nota final: ${c.grade}/10`, '', 'PONTOS A MELHORAR:'];
+  c.improvements.forEach((imp, i) => {
+    lines.push(`${i + 1}. [${imp.severity}] ${imp.area} — ${imp.suggestion}`);
+  });
+  lines.push('', 'PONTOS FORTES:');
+  c.strengths.forEach((s, i) => lines.push(`${i + 1}. ${s}`));
+  lines.push('', 'Escreve a narrativa de fechamento no formato JSON exigido.');
+  return lines.join('\n');
+}
+
+/**
+ * Pass 3 — reescreve a narrativeMd como resumo da correção já filtrada. Em
+ * qualquer falha (API, JSON inválido, narrativa curta) devolve narrativeMd
+ * null e o caller mantém a narrativa original do writer.
+ */
+async function generateNarrative(
+  correction: CorrectionDraftInputT
+): Promise<{ narrativeMd: string | null; usage: UsageReport }> {
+  const failUsage: UsageReport = {
+    model: OPENAI_MODEL,
+    tokensIn: 0,
+    tokensOut: 0,
+    costUsd: 0,
+  };
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        messages: [
+          { role: 'system', content: buildNarratorSystem() },
+          { role: 'user', content: buildNarratorUser(correction) },
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.5,
+        max_tokens: 800,
+      }),
+      signal: AbortSignal.timeout(OPENAI_NARRATOR_TIMEOUT_MS),
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new Error(`OpenAI (narrator) ${res.status}: ${body.slice(0, 200)}`);
+    }
+
+    const data = await res.json();
+    const usage = buildUsage(OPENAI_MODEL, data.usage);
+    const raw = data.choices?.[0]?.message?.content;
+    if (!raw) throw new Error('narrator não devolveu conteúdo');
+
+    const parsed = JSON.parse(raw);
+    const narrativeMd =
+      typeof parsed.narrativeMd === 'string' ? parsed.narrativeMd.trim() : '';
+    if (narrativeMd.length < 10) {
+      throw new Error('narrator devolveu narrativa vazia/curta');
+    }
+
+    return { narrativeMd, usage };
+  } catch (err) {
+    console.warn(
+      '[ai-correction:narrator] fallback pra narrativa do writer:',
+      err instanceof Error ? err.message : err
+    );
+    return { narrativeMd: null, usage: failUsage };
+  }
+}
+
 export interface AIGenerationResult {
   correction: CorrectionDraftInputT;
   model: string;
@@ -838,17 +951,21 @@ export async function generateCorrectionViaAI(input: {
   // demais quando tem que decidir "o que vale apontar" + "como formatar"
   // numa única chamada.
   const passOne = await enumerateIssues(ctx);
+  // Camada determinística no meio do pipeline: descarta issues falsos da
+  // enumeração antes do writer, pra não vazarem nem pro improvement nem pro
+  // narrativeMd (que o writer redige com base nesta lista).
+  const enumeration = filterEnumeration(passOne.enumeration, ctx);
   const totalEnumeratedIssues =
-    passOne.enumeration.fileIssues.reduce((acc, f) => acc + f.issues.length, 0) +
-    passOne.enumeration.projectIssues.length;
+    enumeration.fileIssues.reduce((acc, f) => acc + f.issues.length, 0) +
+    enumeration.projectIssues.length;
   console.log(
-    `[ai-correction] Pass 1 (enumerator): ${totalEnumeratedIssues} issues em ${passOne.enumeration.fileIssues.length} arquivos + ${passOne.enumeration.projectIssues.length} estruturais`
+    `[ai-correction] Pass 1 (enumerator): ${totalEnumeratedIssues} issues em ${enumeration.fileIssues.length} arquivos + ${enumeration.projectIssues.length} estruturais`
   );
 
   // Pass 2: Writer — formata cada issue da enumeração em improvement com tom,
   // codeSnippet e proposedFix. Recebe os arquivos + a enumeração.
   const system = buildSystemPrompt();
-  const user = buildWriterUserPrompt(ctx, passOne.enumeration);
+  const user = buildWriterUserPrompt(ctx, enumeration);
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -887,11 +1004,10 @@ export async function generateCorrectionViaAI(input: {
     throw new Error('OpenAI (writer) devolveu JSON inválido');
   }
 
-  // Normalize AI output before strict validation:
-  // - strip improvement.file (plus lineStart/lineEnd/codeSnippet) when codeSnippet
-  //   is missing, so a partial citation degrades to a general observation instead
-  //   of failing the whole correction.
-  const normalized = normalizeAIOutput(parsed);
+  // Normalize + verificação determinística antes do schema estrito. Limpa
+  // omissões da IA e descarta falsos positivos que dá pra checar contra o repo
+  // (proposedFix no-op, "README falta exemplo de uso" com endpoints listados).
+  const normalized = normalizeAIOutput(parsed, ctx);
 
   const validated = CorrectionDraftInput.safeParse(normalized);
   if (!validated.success) {
@@ -906,14 +1022,22 @@ export async function generateCorrectionViaAI(input: {
     );
   }
 
-  // Soma usage de Pass 1 (enumerator) + Pass 2 (writer)
-  const totalUsage = sumUsage([passOne.usage, writerUsage]);
+  // Pass 3: Narrator — reescreve a narrativeMd como resumo da lista já
+  // filtrada. Recebe só improvements + strengths, não o repo, então não tem
+  // como introduzir cobrança nova. Se falhar, mantém a narrativa do writer.
+  const narration = await generateNarrative(validated.data);
+  const correction: CorrectionDraftInputT = narration.narrativeMd
+    ? { ...validated.data, narrativeMd: narration.narrativeMd }
+    : validated.data;
+
+  // Soma usage de Pass 1 (enumerator) + Pass 2 (writer) + Pass 3 (narrator)
+  const totalUsage = sumUsage([passOne.usage, writerUsage, narration.usage]);
   console.log(
-    `[ai-correction] Pass 2 (writer): ${validated.data.improvements.length} improvements gerados | total tokens: ${totalUsage.tokensIn} in / ${totalUsage.tokensOut} out | total cost: $${totalUsage.costUsd.toFixed(6)}`
+    `[ai-correction] ${correction.improvements.length} improvements | narrator: ${narration.narrativeMd ? 'OK' : 'FALLBACK'} | total tokens: ${totalUsage.tokensIn} in / ${totalUsage.tokensOut} out | total cost: $${totalUsage.costUsd.toFixed(6)}`
   );
 
   return {
-    correction: validated.data,
+    correction,
     model: OPENAI_MODEL,
     promptVersion: PROMPT_VERSION,
     usage: {
@@ -926,12 +1050,98 @@ export async function generateCorrectionViaAI(input: {
 }
 
 /**
- * Clean up AI output so minor omissions don't nuke the whole correction:
- *   - If an improvement has `file` but missing `codeSnippet`, drop the file
- *     reference entirely (graceful degrade to general observation).
- *   - Coerce empty-string optionals to undefined so z.string().min(1) passes.
+ * Tira as fences de markdown e devolve só o código. Sem fence, devolve a
+ * entrada como está. Usado pra comparar um proposedFix (markdown) com um
+ * codeSnippet (código cru).
  */
-function normalizeAIOutput(raw: unknown): unknown {
+function stripMarkdownFences(md: string): string {
+  const blocks = [...md.matchAll(/```[^\n]*\n([\s\S]*?)```/g)].map((m) => m[1]);
+  return blocks.length > 0 ? blocks.join('\n') : md;
+}
+
+/**
+ * True quando o proposedFix, ignorando espaços e a fence, é o MESMO código do
+ * codeSnippet — ou seja, o "fix" não muda nada. Mostrar um antes/depois
+ * idêntico só confunde o aluno.
+ */
+function fixIsNoOp(codeSnippet: string, proposedFix: string): boolean {
+  const norm = (s: string) => s.replace(/\s+/g, ' ').trim();
+  const fix = norm(stripMarkdownFences(proposedFix));
+  const snippet = norm(codeSnippet);
+  return snippet.length > 0 && fix === snippet;
+}
+
+/**
+ * Checagem determinística: o README de fato tem um exemplo de uso da API? A
+ * rubrica conta "curl, Insomnia, lista de endpoints" como suficiente, então a
+ * gente procura um padrão verbo-HTTP + path (POST /todo), um comando curl, ou
+ * menção a cliente de API. Usado pra descartar a cobrança falsa de "falta
+ * exemplo de uso".
+ */
+function readmeHasApiUsageExample(readme: string | null): boolean {
+  if (!readme) return false;
+  return (
+    /\b(GET|POST|PUT|PATCH|DELETE)\s+\/\S/.test(readme) ||
+    /\bcurl\b/i.test(readme) ||
+    /\b(insomnia|postman|thunder client)\b/i.test(readme)
+  );
+}
+
+/** Frase típica de cobrança de "falta exemplo de uso da API". */
+function mentionsMissingUsageExample(text: string): boolean {
+  const t = text.toLowerCase();
+  return (
+    /exemplos?\s+de\s+(uso|requisi)/.test(t) ||
+    /como\s+(usar|consumir|interagir)/.test(t)
+  );
+}
+
+/** True quando um improvement está cobrando que falta exemplo de uso no README. */
+function isReadmeUsageExampleClaim(imp: Record<string, unknown>): boolean {
+  const area = typeof imp.area === 'string' ? imp.area.toLowerCase() : '';
+  const suggestion = typeof imp.suggestion === 'string' ? imp.suggestion : '';
+  const aboutReadme =
+    area.includes('readme') || suggestion.toLowerCase().includes('readme');
+  return aboutReadme && mentionsMissingUsageExample(suggestion);
+}
+
+/**
+ * Roda os checks determinísticos na enumeração do Pass 1 ANTES do writer.
+ * Tirar o issue falso aqui — e não só na saída do writer — evita que ele
+ * vaze pro narrativeMd, que o writer redige com base nesta lista.
+ */
+function filterEnumeration(
+  enumeration: EnumerationResult,
+  ctx: RepoContext
+): EnumerationResult {
+  if (!readmeHasApiUsageExample(ctx.readme)) return enumeration;
+
+  const projectIssues = enumeration.projectIssues.filter((issue) => {
+    if (mentionsMissingUsageExample(issue)) {
+      console.warn(
+        `[ai-correction:enumerator] descartado projectIssue falso (README tem endpoints): "${issue.slice(0, 90)}"`
+      );
+      return false;
+    }
+    return true;
+  });
+
+  return { ...enumeration, projectIssues };
+}
+
+/**
+ * Clean up AI output so minor omissions don't nuke the whole correction, and
+ * drop false positives that can be verified deterministically against the repo.
+ *
+ * Camada determinística: o que dá pra checar em código é checado AQUI, não
+ * confiado a uma regra de prompt (que é probabilística).
+ *   - `file` sem `codeSnippet` → tira a citação (vira observação geral).
+ *   - Optionals com string vazia → undefined (pra z.string().min(1) passar).
+ *   - `proposedFix` idêntico ao `codeSnippet` → remove o fix no-op.
+ *   - "README falta exemplo de uso" quando o README tem lista de endpoints /
+ *     curl → descarta o improvement inteiro (falso positivo).
+ */
+function normalizeAIOutput(raw: unknown, ctx: RepoContext): unknown {
   if (!raw || typeof raw !== 'object') return raw;
   const r = raw as Record<string, unknown>;
   if (!Array.isArray(r.improvements)) return raw;
@@ -971,6 +1181,19 @@ function normalizeAIOutput(raw: unknown): unknown {
       delete i.codeSnippet;
     }
 
+    // proposedFix idêntico ao codeSnippet não corrige nada — antes/depois
+    // iguais só confundem. Remove o fix, mantém a suggestion.
+    if (
+      typeof i.codeSnippet === 'string' &&
+      typeof i.proposedFix === 'string' &&
+      fixIsNoOp(i.codeSnippet, i.proposedFix)
+    ) {
+      console.warn(
+        `[ai-correction:normalize] proposedFix no-op (área "${String(i.area)}") — removido`
+      );
+      delete i.proposedFix;
+    }
+
     // Arquivos .md (README, etc): improvements ficam TEXT-ONLY na suggestion.
     // Tira codeSnippet + proposedFix porque markdown citado/renderizado dentro
     // de markdown na UI vira bagunça visual (--- vira hr, # vira heading).
@@ -992,5 +1215,20 @@ function normalizeAIOutput(raw: unknown): unknown {
     return i;
   });
 
-  return { ...r, improvements: cleaned };
+  // Descarta falsos positivos verificáveis contra o repo. Hoje: cobrança de
+  // "README falta exemplo de uso" quando o README de fato lista os endpoints.
+  const readmeHasUsage = readmeHasApiUsageExample(ctx.readme);
+  const filtered = cleaned.filter((imp) => {
+    if (!imp || typeof imp !== 'object') return true;
+    const i = imp as Record<string, unknown>;
+    if (readmeHasUsage && isReadmeUsageExampleClaim(i)) {
+      console.warn(
+        `[ai-correction:normalize] descartado improvement "${String(i.area)}" — alegou falta de exemplo de uso, mas o README tem lista de endpoints/curl`
+      );
+      return false;
+    }
+    return true;
+  });
+
+  return { ...r, improvements: filtered };
 }
