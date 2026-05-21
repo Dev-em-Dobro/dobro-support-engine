@@ -23,6 +23,7 @@ import {
   Page,
   Text,
   View,
+  Link,
   StyleSheet,
   Font,
   renderToBuffer,
@@ -39,6 +40,11 @@ import {
   CODE_PALETTE,
 } from './syntax-highlight';
 import React from 'react';
+
+// Chat da Ana — mesmo destino do botão "Pergunte à Ana" na página da correção
+// (app/correcoes/[id]/CorrectionLiveView.tsx). No PDF não dá pra copiar o
+// contexto pro clipboard, então cada melhoria leva só o link direto pro chat.
+const ANA_CHAT_URL = 'https://agents.devemdobro.com/chat/ana';
 
 // ---------- Fonts ----------
 // @fontsource packages served via jsdelivr CDN; @react-pdf fetches TTFs on first
@@ -423,6 +429,25 @@ function makeStyles(state: FontState) {
     letterSpacing: 1.4,
   },
 
+  // --- Ana CTA (per improvement) — espelha o botão "Pergunte à Ana" da página ---
+  anaRow: {
+    flexDirection: 'row',
+    marginTop: 12,
+  },
+  anaButton: {
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.45)',
+    backgroundColor: 'rgba(34, 197, 94, 0.08)',
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    fontFamily: bodyFam,
+    fontSize: 9,
+    fontWeight: 600,
+    color: C.accent,
+    textDecoration: 'none',
+  },
+
   // --- Strengths list ---
   strengthRow: {
     flexDirection: 'row',
@@ -707,6 +732,12 @@ function PdfDoc(props: RenderPdfInput & { styles: Styles }) {
                       );
                     })
                   : null}
+
+                <View style={styles.anaRow}>
+                  <Link src={ANA_CHAT_URL} style={styles.anaButton}>
+                    Pergunte à Ana
+                  </Link>
+                </View>
               </View>
             );
           })}
