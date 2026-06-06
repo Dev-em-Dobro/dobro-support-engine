@@ -25,6 +25,18 @@ export const env = {
   get DATABASE_URL() {
     return required('DATABASE_URL');
   },
+  get SCUDO_DATABASE_URL() {
+    return required('SCUDO_DATABASE_URL');
+  },
+  get NEON_NAPI_KEY() {
+    return optional('NEON_NAPI_KEY');
+  },
+  get NEON_ORG_ID() {
+    return optional('NEON_ORG_ID');
+  },
+  get SCUDO_NEON_PROJECT_ID() {
+    return optional('SCUDO_NEON_PROJECT_ID');
+  },
   get APP_URL() {
     return process.env.APP_URL || 'http://localhost:3000';
   },

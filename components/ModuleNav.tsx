@@ -9,6 +9,7 @@ type ModuleItem = {
 
 const modules: ModuleItem[] = [
   { label: 'Correção de Desafios', href: '/correcoes', active: true },
+  { label: 'Dashboard Scudo', href: '/monitor/scudo', active: true },
   { label: 'Tickets', href: '#', active: false },
   { label: 'Histórico do Aluno', href: '#', active: false },
   { label: 'Base de Conhecimento', href: '#', active: false },

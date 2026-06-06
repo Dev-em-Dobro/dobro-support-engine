@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { desc, eq, or, sql as sqlExpr, inArray } from 'drizzle-orm';
+import { desc, sql as sqlExpr, inArray } from 'drizzle-orm';
 import { getSession } from '@/lib/session';
 import { asMonitor } from '@/lib/db-context';
 import { submissions, corrections } from '@/drizzle/schema';
@@ -19,10 +19,10 @@ const FILTERS: { label: string; value: string; statuses: SubmissionStatus[] }[] 
 export default async function MonitorDashboardPage({
   searchParams,
 }: {
-  searchParams: { filter?: string };
+  readonly searchParams: { filter?: string };
 }) {
   const session = await getSession();
-  if (!session || session.role !== 'monitor') {
+  if (session?.role !== 'monitor') {
     redirect('/monitor/login');
   }
 
@@ -59,14 +59,22 @@ export default async function MonitorDashboardPage({
     <section className="mx-auto flex max-w-6xl flex-col gap-4 py-8">
       <div className="flex items-center justify-between">
         <h1 className="font-titulo text-3xl font-bold">Dashboard monitor</h1>
-        <form action="/api/auth/logout" method="post">
-          <button
-            type="submit"
-            className="text-sm text-dobro-cinza-escuro/70"
+        <div className="flex items-center gap-3">
+          <Link
+            href="/monitor/scudo"
+            className="rounded-md border border-dobro-cinza-escuro/15 px-3 py-1.5 text-sm hover:bg-dobro-cinza-claro/50"
           >
-            Sair ({session.email})
-          </button>
-        </form>
+            Ver dashboard Scudo
+          </Link>
+          <form action="/api/auth/logout" method="post">
+            <button
+              type="submit"
+              className="text-sm text-dobro-cinza-escuro/70"
+            >
+              Sair ({session.email})
+            </button>
+          </form>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -99,11 +107,10 @@ export default async function MonitorDashboardPage({
           <Link
             key={f.value}
             href={`/monitor/dashboard?filter=${f.value}`}
-            className={`rounded px-3 py-1 text-sm ${
-              active.value === f.value
-                ? 'bg-dobro-azul text-white'
-                : 'bg-dobro-cinza-claro text-dobro-cinza-escuro hover:bg-dobro-cinza-escuro/10'
-            }`}
+            className={`rounded px-3 py-1 text-sm ${active.value === f.value
+              ? 'bg-dobro-azul text-white'
+              : 'bg-dobro-cinza-claro text-dobro-cinza-escuro hover:bg-dobro-cinza-escuro/10'
+              }`}
           >
             {f.label}
           </Link>
@@ -132,11 +139,10 @@ export default async function MonitorDashboardPage({
                   <div className="flex items-center gap-2">
                     <span>{r.studentEmail}</span>
                     <span
-                      className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wide ${
-                        r.courseVersion === '1.0'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-dobro-cinza-claro text-dobro-cinza-escuro/60'
-                      }`}
+                      className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wide ${r.courseVersion === '1.0'
+                        ? 'bg-amber-100 text-amber-800'
+                        : 'bg-dobro-cinza-claro text-dobro-cinza-escuro/60'
+                        }`}
                       title={r.courseVersion === '1.0' ? 'Cohort legado — DevQuest 1.0' : 'DevQuest 2.0'}
                     >
                       v{r.courseVersion}

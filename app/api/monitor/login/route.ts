@@ -64,20 +64,25 @@ export async function POST(req: Request) {
   // Critério de autorização: email existe + active=true + senha confere.
   const ok = !!user && user.active && valid;
 
-  await asService(async (tx) => {
-    await tx.insert(authEvents).values({
-      eventType: ok ? 'login' : 'unauthorized_access_attempt',
-      emailHash: hashEmail(email),
-      ip,
-      userAgent,
+  try {
+    await asService(async (tx) => {
+      await tx.insert(authEvents).values({
+        eventType: ok ? 'login' : 'unauthorized_access_attempt',
+        emailHash: hashEmail(email),
+        ip,
+        userAgent,
+      });
+      if (ok) {
+        await tx
+          .update(monitorUsers)
+          .set({ lastLoginAt: new Date() })
+          .where(eq(monitorUsers.email, email));
+      }
     });
-    if (ok) {
-      await tx
-        .update(monitorUsers)
-        .set({ lastLoginAt: new Date() })
-        .where(eq(monitorUsers.email, email));
-    }
-  });
+  } catch (err) {
+    // Best-effort audit log: falha de persistencia nao deve impedir o login.
+    console.error('[monitor/login] failed to persist auth event', err);
+  }
 
   if (!ok) {
     // Mesma resposta pra qualquer falha (não enumera email, não diferencia
