@@ -1152,9 +1152,12 @@ function normalizeAIOutput(raw: unknown, ctx: RepoContext): unknown {
     if (!imp || typeof imp !== 'object') return imp;
     const i = { ...(imp as Record<string, unknown>) };
 
-    // Empty strings → undefined
+    // Optionals: null ou string vazia → undefined. gpt-4o costuma mandar
+    // "file": null / "proposedFix": null em vez de omitir o campo, e o Zod
+    // .optional() aceita undefined mas NÃO null ("Expected string, received
+    // null"). Tira ambos pra não derrubar a correção inteira.
     for (const k of ['file', 'codeSnippet', 'proposedFix'] as const) {
-      if (typeof i[k] === 'string' && (i[k] as string).trim() === '') {
+      if (i[k] === null || (typeof i[k] === 'string' && (i[k] as string).trim() === '')) {
         delete i[k];
       }
     }
