@@ -17,7 +17,7 @@ export async function POST(
   // v1 manual: só registra o pedido e volta pra queued. O pipeline automático
   // (Claude + screenshots) chega em v1.1.
   await asMonitor(session.email, async (tx) => {
-    await setSubmissionStatus(tx, params.id, 'draft', { errorMsg: null });
+    await setSubmissionStatus(tx, params.id, 'queued', { errorMsg: null });
     await logMonitorAction(tx, {
       submissionId: params.id,
       monitorEmail: session.email,

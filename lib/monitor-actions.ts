@@ -93,7 +93,14 @@ export async function logMonitorAction(
 export async function setSubmissionStatus(
   tx: Tx,
   submissionId: string,
-  status: 'draft' | 'approved' | 'rejected' | 'delivered',
+  status:
+    | 'queued'
+    | 'processing'
+    | 'draft'
+    | 'approved'
+    | 'rejected'
+    | 'delivered'
+    | 'failed',
   extras: Partial<{ correctedAt: Date; deliveredAt: Date; errorMsg: string | null }> = {}
 ) {
   await tx

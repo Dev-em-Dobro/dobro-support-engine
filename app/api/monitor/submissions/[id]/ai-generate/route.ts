@@ -40,9 +40,9 @@ export async function POST(
     return NextResponse.json({ error: 'submission não encontrada' }, { status: 404 });
   }
 
-  // Marcar como processing (feedback visual no dashboard)
+  // Feedback visual — pipeline correndo
   await asMonitor(session.email, async (tx) => {
-    await setSubmissionStatus(tx, params.id, 'draft', { errorMsg: null });
+    await setSubmissionStatus(tx, params.id, 'processing', { errorMsg: null });
   });
 
   let generated;
@@ -54,7 +54,7 @@ export async function POST(
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'erro gerando correção';
     await asMonitor(session.email, async (tx) => {
-      await setSubmissionStatus(tx, params.id, 'rejected', { errorMsg: msg });
+      await setSubmissionStatus(tx, params.id, 'failed', { errorMsg: msg });
     });
     return NextResponse.json({ error: msg }, { status: 502 });
   }
@@ -72,6 +72,7 @@ export async function POST(
   const totalUsage = sumUsage([generated.usage, polish.usage]);
 
   // Persistir o rascunho polido
+  const now = new Date();
   await asMonitor(session.email, async (tx) => {
     await upsertCorrection(tx, params.id, polish.polished, {
       model: generated.model,
@@ -80,8 +81,9 @@ export async function POST(
       tokensOut: totalUsage.tokensOut,
       costUsd: totalUsage.costUsd,
     });
-    await setSubmissionStatus(tx, params.id, 'draft', {
-      correctedAt: new Date(),
+    await setSubmissionStatus(tx, params.id, 'delivered', {
+      correctedAt: now,
+      deliveredAt: now,
       errorMsg: null,
     });
     await logMonitorAction(tx, {

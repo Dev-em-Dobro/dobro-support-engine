@@ -7,9 +7,9 @@
  *
  * Runs with service-role DB context (no monitor session required).
  *
- * State machine:
- *   queued → processing → draft   (happy path)
- *   queued → processing → failed  (with errorMsg)
+ * State machine (fluxo público atual):
+ *   queued → processing → delivered  (happy path — correção disponível ao aluno)
+ *   queued → processing → failed     (with errorMsg)
  *
  * Idempotency: claimSubmission() only transitions queued → processing or
  * stale-processing → processing. If another caller already claimed it, we skip.
@@ -59,8 +59,9 @@ interface DraftInput {
   polishUsage: UsageReport;
 }
 
-async function saveDraft(submissionId: string, draft: DraftInput) {
+async function saveDeliveredCorrection(submissionId: string, draft: DraftInput) {
   const totalUsage = sumUsage([draft.genUsage, draft.polishUsage]);
+  const now = new Date();
 
   return asService(async (tx) => {
     const existing = await tx
@@ -103,9 +104,10 @@ async function saveDraft(submissionId: string, draft: DraftInput) {
     await tx
       .update(submissions)
       .set({
-        status: 'draft',
-        correctedAt: new Date(),
-        updatedAt: new Date(),
+        status: 'delivered',
+        correctedAt: now,
+        deliveredAt: now,
+        updatedAt: now,
         errorMsg: null,
       })
       .where(eq(submissions.id, submissionId));
@@ -173,7 +175,7 @@ export async function processSubmissionWithAI(submissionId: string): Promise<
       studentEmail: claimed.studentEmail,
     });
 
-    await saveDraft(submissionId, {
+    await saveDeliveredCorrection(submissionId, {
       ...generated,
       correction: polish.polished,
       polishChanges: polish.changes,

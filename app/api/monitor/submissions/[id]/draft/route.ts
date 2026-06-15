@@ -28,12 +28,18 @@ export async function POST(
     );
   }
 
+  const now = new Date();
+
   await asMonitor(session.email, async (tx) => {
     await upsertCorrection(tx, params.id, parsed.data, {
       model: 'manual',
       promptVersion: 'manual-v1',
     });
-    await setSubmissionStatus(tx, params.id, 'draft');
+    await setSubmissionStatus(tx, params.id, 'delivered', {
+      correctedAt: now,
+      deliveredAt: now,
+      errorMsg: null,
+    });
     await logMonitorAction(tx, {
       submissionId: params.id,
       monitorEmail: session.email,

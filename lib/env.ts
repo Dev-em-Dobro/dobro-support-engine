@@ -41,7 +41,14 @@ export const env = {
     return process.env.APP_URL || 'http://localhost:3000';
   },
   get AUTH_SECRET() {
-    return required('AUTH_SECRET');
+    const v = process.env.AUTH_SECRET;
+    if (v) return v;
+    if (process.env.NODE_ENV !== 'production') {
+      // Fallback só para dev local: evita travar login quando o .env ainda
+      // não foi completado. Em produção continua obrigatório.
+      return 'dev-only-auth-secret-change-me';
+    }
+    throw new Error('Missing env: AUTH_SECRET');
   },
   get DEV_MODE() {
     return bool('DOBRO_DEV_MODE', process.env.NODE_ENV !== 'production');

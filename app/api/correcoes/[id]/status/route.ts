@@ -5,8 +5,10 @@
  * and the only data exposed is the correction text + repo URL that the
  * student themselves just submitted. No sensitive data.
  *
- * Returns the submission status and, when ready (draft/approved/delivered),
- * the full correction payload so the client can render it inline.
+ * Returns a student-facing status:
+ *   - corrected: correction payload is ready
+ *   - failed: pipeline failed (includes errorMsg when available)
+ *   - processing: transient state while waiting
  */
 
 import { NextResponse } from 'next/server';
@@ -29,6 +31,7 @@ export async function GET(
         deployedUrl: submissions.deployedUrl,
         errorMsg: submissions.errorMsg,
         correctedAt: submissions.correctedAt,
+        deliveredAt: submissions.deliveredAt,
         submittedAt: submissions.submittedAt,
       })
       .from(submissions)
@@ -54,16 +57,22 @@ export async function GET(
     return NextResponse.json({ error: 'não encontrado' }, { status: 404 });
   }
 
-  const ready = ['draft', 'approved', 'delivered'].includes(data.submission.status);
+  const ready = data.submission.status === 'delivered' || data.submission.status === 'approved';
+  const publicStatus = ready
+    ? 'corrected'
+    : data.submission.status === 'failed' || data.submission.status === 'rejected'
+      ? 'failed'
+      : 'processing';
 
   return NextResponse.json({
     id: data.submission.id,
-    status: data.submission.status,
+    status: publicStatus,
     githubUrl: data.submission.githubUrl,
     deployedUrl: data.submission.deployedUrl,
     errorMsg: data.submission.errorMsg,
     submittedAt: data.submission.submittedAt,
     correctedAt: data.submission.correctedAt,
+    deliveredAt: data.submission.deliveredAt,
     correction: ready ? data.correction : null,
   });
 }

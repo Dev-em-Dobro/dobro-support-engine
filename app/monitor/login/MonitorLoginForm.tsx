@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 const inputCls =
-  'rounded-md border border-dobro-cinza-escuro/15 bg-dobro-cinza-claro/40 px-3.5 py-2.5 text-dobro-cinza-escuro placeholder:text-dobro-cinza-escuro/40 focus:border-dobro-azul focus:bg-white focus:outline-none focus:ring-2 focus:ring-dobro-azul/20 transition-colors';
+  'rounded-md border border-dobro-cinza-escuro/15 bg-dobro-cinza-claro/40 px-3.5 py-2.5 text-dobro-cinza-escuro placeholder:text-dobro-cinza-escuro/40 focus:border-dobro-azul focus:bg-dobro-cinza-claro/60 focus:outline-none focus:ring-2 focus:ring-dobro-azul/20 transition-colors';
 
 const labelTitleCls = 'font-titulo text-sm font-semibold';
 
@@ -24,6 +24,7 @@ export function MonitorLoginForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        signal: AbortSignal.timeout(15000),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -34,7 +35,11 @@ export function MonitorLoginForm() {
       router.push('/monitor/dashboard');
       router.refresh();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Erro desconhecido');
+      if (e instanceof DOMException && e.name === 'TimeoutError') {
+        setErr('Login demorou demais para responder. Tenta novamente.');
+      } else {
+        setErr(e instanceof Error ? e.message : 'Erro desconhecido');
+      }
       setLoading(false);
     }
   }

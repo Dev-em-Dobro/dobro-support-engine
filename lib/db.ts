@@ -3,6 +3,10 @@ import { drizzle as drizzleHttp } from 'drizzle-orm/neon-http';
 import { drizzle as drizzlePool } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from '@/drizzle/schema';
+// Side-effect import: instala (em DEV) o handler de uncaughtException pra
+// engolir erros transientes do websocket Neon. Em prod o módulo só exporta
+// helpers, sem instalar nada.
+import './db-retry';
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is not set. See .env.local.example.');

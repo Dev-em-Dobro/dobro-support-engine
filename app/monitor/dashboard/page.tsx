@@ -9,7 +9,7 @@ import { statusBadge, statusLabel, type SubmissionStatus } from '@/lib/status';
 export const metadata = { title: 'Dashboard monitor · Dobro Support' };
 
 const FILTERS: { label: string; value: string; statuses: SubmissionStatus[] }[] = [
-  { label: 'Pendentes', value: 'pending', statuses: ['queued', 'processing', 'draft'] },
+  { label: 'Pendentes', value: 'pending', statuses: ['queued', 'processing'] },
   { label: 'Aprovadas', value: 'approved', statuses: ['approved'] },
   { label: 'Entregues', value: 'delivered', statuses: ['delivered'] },
   { label: 'Rejeitadas', value: 'rejected', statuses: ['rejected', 'failed'] },

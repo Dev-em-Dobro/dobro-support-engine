@@ -18,7 +18,7 @@ export async function POST(
   const reason = typeof body?.reason === 'string' ? body.reason.slice(0, 500) : undefined;
 
   await asMonitor(session.email, async (tx) => {
-    await setSubmissionStatus(tx, params.id, 'rejected', {
+    await setSubmissionStatus(tx, params.id, 'failed', {
       errorMsg: reason ?? 'Rejeitada pelo monitor',
     });
     await logMonitorAction(tx, {

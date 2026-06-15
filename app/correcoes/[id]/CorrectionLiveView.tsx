@@ -26,7 +26,7 @@ type ImprovementView = {
 
 type StatusResponse = {
   id: string;
-  status: string;
+  status: 'processing' | 'corrected' | 'failed';
   githubUrl: string;
   deployedUrl: string | null;
   errorMsg: string | null;
@@ -76,7 +76,7 @@ export function CorrectionLiveView({ submissionId }: { submissionId: string }) {
   }
 
   if (data.status === 'failed') {
-    return <ErrorState repo={data.githubUrl} />;
+    return <ErrorState repo={data.githubUrl} errorMsg={data.errorMsg} />;
   }
 
   if (!data.correction) {
@@ -141,7 +141,7 @@ function Loader({
 
 // ---------------- Error ----------------
 
-function ErrorState({ repo }: { repo: string }) {
+function ErrorState({ repo, errorMsg }: { repo: string; errorMsg: string | null }) {
   return (
     <div className="flex flex-col items-center gap-4 rounded-xl border border-red-500/25 bg-red-500/[0.06] p-8 text-center">
       <p className="font-titulo text-lg font-semibold text-red-300">
@@ -155,6 +155,16 @@ function ErrorState({ repo }: { repo: string }) {
         . Confere se ele é público e tenta de novo, ou fala com a equipe no
         Discord.
       </p>
+      {errorMsg && (
+        <div className="w-full max-w-md rounded-lg border border-red-400/30 bg-black/25 px-3 py-2 text-left">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em] text-red-200/85">
+            detalhe técnico
+          </p>
+          <p className="mt-1 break-words font-mono text-[12px] leading-relaxed text-red-100/90">
+            {errorMsg}
+          </p>
+        </div>
+      )}
       <a
         href="/correcoes/submit"
         className="mt-2 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 font-titulo text-sm font-bold uppercase tracking-wide text-white shadow-[0_8px_24px_-8px_rgba(16,185,129,0.55)] transition-all duration-150 hover:bg-emerald-600 active:translate-y-[1px]"

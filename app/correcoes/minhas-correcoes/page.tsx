@@ -4,7 +4,31 @@ import { desc } from 'drizzle-orm';
 import { getSession } from '@/lib/session';
 import { asStudent } from '@/lib/db-context';
 import { submissions } from '@/drizzle/schema';
-import { statusBadge, statusLabel } from '@/lib/status';
+function studentStatusLabel(status: string): string {
+  if (status === 'failed' || status === 'rejected') return 'Falha';
+  if (
+    status === 'delivered' ||
+    status === 'approved' ||
+    status === 'draft'
+  ) {
+    return 'Corrigido';
+  }
+  return 'Gerando';
+}
+
+function studentStatusBadge(status: string): string {
+  if (status === 'failed' || status === 'rejected') {
+    return 'bg-red-100 text-red-800';
+  }
+  if (
+    status === 'delivered' ||
+    status === 'approved' ||
+    status === 'draft'
+  ) {
+    return 'bg-emerald-100 text-emerald-800';
+  }
+  return 'bg-blue-100 text-blue-800';
+}
 
 export const metadata = { title: 'Minhas correções · Dobro Support' };
 
@@ -82,13 +106,11 @@ export default async function MinhasCorrecoesPage({
               </div>
               <div className="flex items-center gap-3">
                 <span
-                  className={`rounded-full px-3 py-1 text-xs font-medium ${statusBadge(
-                    row.status
-                  )}`}
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${studentStatusBadge(row.status)}`}
                 >
-                  {statusLabel(row.status)}
+                  {studentStatusLabel(row.status)}
                 </span>
-                {row.status === 'delivered' && (
+                {row.status !== 'failed' && row.status !== 'rejected' && (
                   <Link
                     href={`/correcoes/${row.id}`}
                     className="text-sm font-medium text-dobro-laranja hover:underline"

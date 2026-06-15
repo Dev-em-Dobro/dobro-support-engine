@@ -305,7 +305,7 @@ export function CorrectionEditor({
   }
 
   const readOnly = submissionStatus === 'delivered';
-  const canApprove = ['queued', 'processing', 'draft', 'rejected'].includes(submissionStatus);
+  const canApprove = ['queued', 'processing', 'failed', 'approved'].includes(submissionStatus);
   const gradeNum = Number(grade);
   const gradeColor =
     gradeNum >= 8 ? 'text-emerald-400'

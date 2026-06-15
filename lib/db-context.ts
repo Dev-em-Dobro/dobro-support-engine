@@ -21,6 +21,7 @@
 
 import { sql as sqlExpr } from 'drizzle-orm';
 import { dbTx } from './db';
+import { withTransientRetry } from './db-retry';
 
 export type UserRole = 'student' | 'monitor' | 'service';
 
@@ -39,21 +40,27 @@ export async function withUserContext<T>(
     throw new Error(`withUserContext: email required for role=${ctx.role}`);
   }
 
-  return dbTx.transaction(async (tx) => {
-    // Use set_config() with is_local=true so values are bound to the current tx.
-    // Parameterized via sqlExpr to avoid SQL injection on the email value.
-    await tx.execute(
-      sqlExpr`SELECT set_config('app.user_role', ${ctx.role}, true)`
-    );
-    if (ctx.email) {
+  // Retry transiente — Neon serverless fecha websockets idle / sob carga, o
+  // que gera "Connection terminated unexpectedly" pontual. Sem retry aqui,
+  // toda chamada de DB precisaria do seu próprio wrapper (já tinha um em
+  // monitor/login/route.ts). Centralizar aqui cobre tudo de uma vez.
+  return withTransientRetry(() =>
+    dbTx.transaction(async (tx) => {
+      // Use set_config() with is_local=true so values are bound to the current tx.
+      // Parameterized via sqlExpr to avoid SQL injection on the email value.
       await tx.execute(
-        sqlExpr`SELECT set_config('app.user_email', ${ctx.email.toLowerCase()}, true)`
+        sqlExpr`SELECT set_config('app.user_role', ${ctx.role}, true)`
       );
-    } else {
-      await tx.execute(sqlExpr`SELECT set_config('app.user_email', '', true)`);
-    }
-    return fn(tx);
-  });
+      if (ctx.email) {
+        await tx.execute(
+          sqlExpr`SELECT set_config('app.user_email', ${ctx.email.toLowerCase()}, true)`
+        );
+      } else {
+        await tx.execute(sqlExpr`SELECT set_config('app.user_email', '', true)`);
+      }
+      return fn(tx);
+    })
+  );
 }
 
 // Convenience helpers

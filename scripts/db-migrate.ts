@@ -36,6 +36,7 @@ const MIGRATIONS = [
   'drizzle/migrations/0003_course_version.sql',
   'drizzle/migrations/0004_correction_costs.sql',
   'drizzle/migrations/0005_security_hardening.sql',
+  'drizzle/migrations/0006_ai_delivery_no_monitor.sql',
 ];
 
 async function main() {
