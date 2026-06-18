@@ -23,7 +23,7 @@ import { sql as sqlExpr } from 'drizzle-orm';
 import { dbTx } from './db';
 import { withTransientRetry } from './db-retry';
 
-export type UserRole = 'student' | 'monitor' | 'service';
+export type UserRole = 'student' | 'monitor' | 'sales' | 'service';
 
 export interface UserContext {
   role: UserRole;
@@ -36,7 +36,7 @@ export async function withUserContext<T>(
   ctx: UserContext,
   fn: (tx: TxType) => Promise<T>
 ): Promise<T> {
-  if ((ctx.role === 'student' || ctx.role === 'monitor') && !ctx.email) {
+  if ((ctx.role === 'student' || ctx.role === 'monitor' || ctx.role === 'sales') && !ctx.email) {
     throw new Error(`withUserContext: email required for role=${ctx.role}`);
   }
 
@@ -72,3 +72,6 @@ export const asMonitor = <T>(email: string, fn: (tx: TxType) => Promise<T>) =>
 
 export const asService = <T>(fn: (tx: TxType) => Promise<T>) =>
   withUserContext({ role: 'service' }, fn);
+
+export const asSalesUser = <T>(email: string, fn: (tx: TxType) => Promise<T>) =>
+  withUserContext({ role: 'sales', email }, fn);

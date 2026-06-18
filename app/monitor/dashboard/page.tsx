@@ -61,10 +61,22 @@ export default async function MonitorDashboardPage({
         <h1 className="font-titulo text-3xl font-bold">Dashboard monitor</h1>
         <div className="flex items-center gap-3">
           <Link
+            href="/gestor-vendas"
+            className="rounded-md border border-dobro-cinza-escuro/15 px-3 py-1.5 text-sm hover:bg-dobro-cinza-claro/50"
+          >
+            Painel Gestor de Vendas
+          </Link>
+          <Link
             href="/monitor/scudo"
             className="rounded-md border border-dobro-cinza-escuro/15 px-3 py-1.5 text-sm hover:bg-dobro-cinza-claro/50"
           >
             Ver dashboard Scudo
+          </Link>
+          <Link
+            href="/monitor/2fa"
+            className="rounded-md border border-dobro-cinza-escuro/15 px-3 py-1.5 text-sm hover:bg-dobro-cinza-claro/50"
+          >
+            2FA
           </Link>
           <form action="/api/auth/logout" method="post">
             <button

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
-import { setSessionCookie } from '@/lib/session';
+import { setSessionCookie, setPending2faCookie } from '@/lib/session';
 import { asService } from '@/lib/db-context';
 import { monitorUsers, authEvents } from '@/drizzle/schema';
 import { verifyPassword } from '@/lib/password';
@@ -105,16 +105,24 @@ export async function POST(req: Request) {
     // Critério de autorização: email existe + active=true + senha confere.
     const ok = !!user && user.active && valid;
 
+    // Quando o 2FA está habilitado, a senha correta não basta: emitimos só o
+    // cookie de pré-auth e a sessão real só nasce no /login/2fa após o código.
+    const needs2fa = ok && !!user?.totpEnabledAt;
+
     try {
       await withTransientRetry(() =>
         asService(async (tx) => {
-          await tx.insert(authEvents).values({
-            eventType: ok ? 'login' : 'unauthorized_access_attempt',
-            emailHash: hashEmail(email),
-            ip,
-            userAgent,
-          });
-          if (ok) {
+          // Quando precisa de 2FA, não auditamos nada aqui: o login completo (ou
+          // a falha 'two_factor_failed') é registrado na rota /login/2fa.
+          if (!needs2fa) {
+            await tx.insert(authEvents).values({
+              eventType: ok ? 'login' : 'unauthorized_access_attempt',
+              emailHash: hashEmail(email),
+              ip,
+              userAgent,
+            });
+          }
+          if (ok && !needs2fa) {
             await tx
               .update(monitorUsers)
               .set({ lastLoginAt: new Date() })
@@ -131,6 +139,11 @@ export async function POST(req: Request) {
       // Mesma resposta pra qualquer falha (não enumera email, não diferencia
       // active=false de senha errada). Frontend vê só "credenciais inválidas".
       return NextResponse.json({ error: 'credenciais inválidas' }, { status: 401 });
+    }
+
+    if (needs2fa) {
+      await setPending2faCookie(email);
+      return NextResponse.json({ requires2fa: true });
     }
 
     await setSessionCookie({ role: 'monitor', email });

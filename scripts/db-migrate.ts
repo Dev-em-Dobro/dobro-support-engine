@@ -37,6 +37,17 @@ const MIGRATIONS = [
   'drizzle/migrations/0004_correction_costs.sql',
   'drizzle/migrations/0005_security_hardening.sql',
   'drizzle/migrations/0006_ai_delivery_no_monitor.sql',
+  'drizzle/migrations/0007_sales_agent.sql',
+  'drizzle/migrations/0008_kb_tables.sql',
+  'drizzle/migrations/0009_sales_conversations.sql',
+  'drizzle/migrations/0010_sales_rls.sql',
+  'drizzle/migrations/0011_sales_settings.sql',
+  'drizzle/migrations/0012_sales_effective_prompt.sql',
+  'drizzle/migrations/0013_sales_settings_history.sql',
+  'drizzle/migrations/0014_monitor_2fa.sql',
+  'drizzle/migrations/0015_sales_context_approval.sql',
+  'drizzle/migrations/0016_sales_eval.sql',
+  'drizzle/migrations/0017_sales_objection_options.sql',
 ];
 
 async function main() {

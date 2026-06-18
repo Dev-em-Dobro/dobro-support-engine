@@ -7,7 +7,12 @@ node_modules/
 .DS_Store
 .vercel
 next-env.d.ts
-docs/
+# Ignora conteúdo de docs/ por padrão, mas versiona PRDs e stories
+# (AIOS story-driven dev). Precisa ser `docs/*` (não `docs/`) pra exceções
+# funcionarem — git não des-ignora arquivo dentro de pasta ignorada.
+docs/*
+!docs/prd/
+!docs/stories/
 
 # TypeScript incremental build cache — regenerated em cada build, nunca versionar
 *.tsbuildinfo
