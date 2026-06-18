@@ -79,4 +79,22 @@ export const env = {
   get CRON_SECRET() {
     return optional('CRON_SECRET');
   },
+  // Webhook (Slack/Discord) para alertas fora-de-banda de mudanças críticas no
+  // agente de vendas — ex.: edição do chat_context. Opcional: se ausente, o
+  // alerta é silenciosamente ignorado.
+  get SALES_ALERT_WEBHOOK() {
+    return optional('SALES_ALERT_WEBHOOK');
+  },
+  // Aprovação two-eyes do chat_context: quando true, uma edição entra como
+  // pendente e exige aprovação de um SEGUNDO monitor antes de virar ativa.
+  // Default false — só faz sentido com 3+ gestores (precisa de aprovador).
+  get SALES_CONTEXT_REQUIRE_APPROVAL() {
+    return bool('SALES_CONTEXT_REQUIRE_APPROVAL', false);
+  },
+  // Dispara a avaliação automatizada (lib/sales-eval) em background sempre que o
+  // chat_context muda. Default false — tem custo de API por mudança; ligue
+  // quando houver baseline curado. A avaliação manual via UI funciona sempre.
+  get SALES_EVAL_AUTO() {
+    return bool('SALES_EVAL_AUTO', false);
+  },
 };
