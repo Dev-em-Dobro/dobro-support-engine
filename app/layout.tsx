@@ -4,6 +4,11 @@ import { ModuleNav } from '@/components/ModuleNav';
 import { getSession } from '@/lib/session';
 import '@/styles/globals.css';
 
+// O root layout chama getSession() (lê cookies), então o app inteiro é
+// renderizado sob demanda. Marcamos explícito pra o Next não tentar
+// pré-renderizar estaticamente (evita o ruído DYNAMIC_SERVER_USAGE no build).
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Dobro Support',
   description:
