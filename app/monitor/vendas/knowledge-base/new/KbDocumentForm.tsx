@@ -11,7 +11,7 @@ interface FaqPair {
 }
 
 const inputCls =
-  'w-full rounded-md border border-dobro-cinza-escuro/15 bg-white px-3.5 py-2.5 text-dobro-cinza-escuro focus:border-dobro-azul focus:outline-none focus:ring-2 focus:ring-dobro-azul/20 transition-colors text-sm';
+  'w-full rounded-md border border-[#333] bg-[#1a1a1a] px-3.5 py-2.5 text-white placeholder:text-white/40 focus:border-[#6528d3] focus:outline-none focus:ring-2 focus:ring-[#6528d3]/20 transition-colors text-sm';
 
 export function KbDocumentForm() {
   const router = useRouter();
@@ -91,7 +91,7 @@ export function KbDocumentForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="flex rounded-lg border border-dobro-cinza-escuro/15 overflow-hidden">
+      <div className="flex rounded-lg border border-[#333] overflow-hidden">
         {(['pdf', 'markdown', 'faq'] as SourceType[]).map((t) => (
           <button
             key={t}
@@ -99,8 +99,8 @@ export function KbDocumentForm() {
             onClick={() => setTab(t)}
             className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${
               tab === t
-                ? 'bg-dobro-azul text-white'
-                : 'bg-white text-dobro-cinza-escuro/70 hover:bg-dobro-cinza-claro'
+                ? 'bg-[#6528d3] text-white'
+                : 'bg-[#1a1a1a] text-white/70 hover:bg-white/5'
             }`}
           >
             {t === 'pdf' ? 'PDF' : t === 'markdown' ? 'Markdown' : 'FAQ'}
@@ -152,7 +152,7 @@ export function KbDocumentForm() {
             accept="application/pdf"
             required
             onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)}
-            className="block w-full text-sm text-dobro-cinza-escuro file:mr-4 file:rounded-md file:border-0 file:bg-dobro-azul/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-dobro-azul hover:file:bg-dobro-azul/20"
+            className="block w-full text-sm text-white/80 file:mr-4 file:rounded-md file:border-0 file:bg-[#6528d3]/15 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[#a78bfa] hover:file:bg-[#6528d3]/25"
           />
         </label>
       )}
@@ -178,20 +178,20 @@ export function KbDocumentForm() {
             <button
               type="button"
               onClick={addFaqPair}
-              className="text-sm text-dobro-azul hover:underline"
+              className="text-sm text-[#6528d3] hover:underline"
             >
               + Adicionar par
             </button>
           </div>
           {faqPairs.map((pair, i) => (
-            <div key={i} className="rounded-lg border border-dobro-cinza-escuro/10 p-4 space-y-3">
+            <div key={i} className="rounded-lg border border-[#333] p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-dobro-cinza-escuro/50">Par {i + 1}</span>
+                <span className="text-xs font-semibold text-white/50">Par {i + 1}</span>
                 {faqPairs.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeFaqPair(i)}
-                    className="text-xs text-red-500 hover:underline"
+                    className="text-xs text-[#f87171] hover:underline"
                   >
                     Remover
                   </button>
@@ -220,10 +220,10 @@ export function KbDocumentForm() {
 
       {status && (
         <div
-          className={`rounded-md px-4 py-3 text-sm ${
+          className={`rounded-md border px-4 py-3 text-sm ${
             status.type === 'error'
-              ? 'bg-red-50 text-red-700 ring-1 ring-red-200'
-              : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
+              ? 'border-[#ef4444]/40 bg-[#ef4444]/10 text-[#fca5a5]'
+              : 'border-[#22c55e]/40 bg-[#22c55e]/10 text-[#6ee7b7]'
           }`}
         >
           {status.msg}
@@ -234,14 +234,14 @@ export function KbDocumentForm() {
         <button
           type="button"
           onClick={() => router.back()}
-          className="flex-1 rounded-lg border border-dobro-cinza-escuro/15 py-2.5 text-sm font-semibold text-dobro-cinza-escuro/70 hover:bg-dobro-cinza-claro transition-colors"
+          className="flex-1 rounded-lg border border-[#333] py-2.5 text-sm font-semibold text-white/70 hover:bg-white/5 transition-colors"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 rounded-lg bg-dobro-azul py-2.5 text-sm font-bold text-white hover:bg-dobro-azul/90 disabled:opacity-50 transition-colors"
+          className="flex-1 rounded-lg bg-[#6528d3] py-2.5 text-sm font-bold text-white hover:bg-[#5020b0] disabled:opacity-50 transition-colors"
         >
           {loading ? 'Processando...' : 'Cadastrar'}
         </button>

@@ -3,11 +3,11 @@
 import { useState } from 'react';
 
 const inputCls =
-  'rounded-md border border-dobro-cinza-escuro/15 bg-white px-3.5 py-2.5 text-sm text-dobro-cinza-escuro focus:border-dobro-azul focus:outline-none focus:ring-2 focus:ring-dobro-azul/20 transition-colors';
+  'rounded-md border border-[#333] bg-[#1a1a1a] px-3.5 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#6528d3] focus:outline-none focus:ring-2 focus:ring-[#6528d3]/20 transition-colors';
 const btnPrimary =
-  'rounded-lg bg-dobro-azul px-5 py-2.5 text-sm font-bold text-white hover:bg-dobro-azul/90 disabled:opacity-50 transition-colors';
+  'rounded-lg bg-[#6528d3] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#5020b0] disabled:opacity-50 transition-colors';
 const btnDanger =
-  'rounded-lg border border-red-300 px-5 py-2.5 text-sm font-bold text-red-700 hover:bg-red-50 disabled:opacity-50 transition-colors';
+  'rounded-lg border border-[#ef4444]/50 px-5 py-2.5 text-sm font-bold text-[#fca5a5] hover:bg-[#ef4444]/10 disabled:opacity-50 transition-colors';
 
 interface Props {
   initiallyEnabled: boolean;
@@ -105,19 +105,19 @@ export function TwoFactorSetup({ initiallyEnabled, email }: Props) {
   }
 
   const errBox = err && (
-    <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">{err}</p>
+    <p className="rounded-md border border-[#ef4444]/40 bg-[#ef4444]/10 px-3 py-2 text-sm text-[#fca5a5]">{err}</p>
   );
 
   // Tela de códigos de backup — mostrados uma única vez após habilitar.
   if (backupCodes) {
     return (
       <div className="space-y-4">
-        <div className="rounded-md bg-green-50 px-4 py-3 text-sm text-green-700 ring-1 ring-green-200">
+        <div className="rounded-md border border-[#22c55e]/40 bg-[#22c55e]/10 px-4 py-3 text-sm text-[#6ee7b7]">
           2FA habilitado. Guarde os códigos de backup abaixo num lugar seguro —{' '}
           <strong>eles não serão exibidos de novo</strong>. Cada um funciona uma vez, caso você
           perca o app autenticador.
         </div>
-        <ul className="grid grid-cols-2 gap-2 rounded-md bg-dobro-cinza-escuro/5 p-4 font-mono text-sm">
+        <ul className="grid grid-cols-2 gap-2 rounded-md border border-[#333] bg-white/5 p-4 font-mono text-sm text-white">
           {backupCodes.map((c) => (
             <li key={c}>{c}</li>
           ))}
@@ -134,15 +134,15 @@ export function TwoFactorSetup({ initiallyEnabled, email }: Props) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-sm">
-          <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+          <span className="rounded-full bg-[#22c55e]/15 px-2 py-0.5 text-xs font-medium text-[#6ee7b7]">
             ativo
           </span>
-          <span className="text-dobro-cinza-escuro/70">
+          <span className="text-white/70">
             O login de <span className="font-mono">{email}</span> exige o código do app.
           </span>
         </div>
-        <form onSubmit={disable} className="space-y-3 border-t border-dobro-cinza-escuro/10 pt-4">
-          <p className="text-sm text-dobro-cinza-escuro/70">
+        <form onSubmit={disable} className="space-y-3 border-t border-[#333] pt-4">
+          <p className="text-sm text-white/70">
             Pra desabilitar, confirme com um código atual (ou de backup):
           </p>
           <input
@@ -167,21 +167,21 @@ export function TwoFactorSetup({ initiallyEnabled, email }: Props) {
   if (enrolling && secret) {
     return (
       <form onSubmit={confirmEnroll} className="space-y-4">
-        <ol className="list-decimal space-y-2 pl-5 text-sm text-dobro-cinza-escuro/80">
+        <ol className="list-decimal space-y-2 pl-5 text-sm text-white/80">
           <li>
             Abra seu app autenticador (Google Authenticator, Authy, 1Password…) e adicione uma
             conta nova por <strong>entrada manual</strong>.
           </li>
           <li>
             Cole/digite esta chave (conta: <span className="font-mono">{email}</span>):
-            <div className="mt-1 select-all rounded-md bg-dobro-cinza-escuro/5 px-3 py-2 font-mono text-base tracking-wider">
+            <div className="mt-1 select-all rounded-md border border-[#333] bg-white/5 px-3 py-2 font-mono text-base tracking-wider text-white">
               {secret}
             </div>
           </li>
           <li>Digite o código de 6 dígitos que o app gerar pra confirmar:</li>
         </ol>
         {uri && (
-          <p className="break-all text-xs text-dobro-cinza-escuro/40">
+          <p className="break-all text-xs text-white/40">
             Ou importe via URI: <span className="font-mono">{uri}</span>
           </p>
         )}
@@ -202,7 +202,7 @@ export function TwoFactorSetup({ initiallyEnabled, email }: Props) {
           </button>
           <button
             type="button"
-            className="rounded-lg px-4 py-2.5 text-sm text-dobro-cinza-escuro/60 hover:underline"
+            className="rounded-lg px-4 py-2.5 text-sm text-white/60 hover:underline"
             onClick={() => {
               setEnrolling(false);
               setSecret(null);
@@ -222,10 +222,10 @@ export function TwoFactorSetup({ initiallyEnabled, email }: Props) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm">
-        <span className="rounded-full bg-dobro-cinza-escuro/10 px-2 py-0.5 text-xs font-medium text-dobro-cinza-escuro/60">
+        <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-white/60">
           inativo
         </span>
-        <span className="text-dobro-cinza-escuro/70">O login usa só e-mail e senha.</span>
+        <span className="text-white/70">O login usa só e-mail e senha.</span>
       </div>
       {errBox}
       <button type="button" disabled={loading} className={btnPrimary} onClick={startEnroll}>

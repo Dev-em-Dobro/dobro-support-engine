@@ -58,30 +58,30 @@ export default async function MonitorDashboardPage({
   return (
     <section className="mx-auto flex max-w-6xl flex-col gap-4 py-8">
       <div className="flex items-center justify-between">
-        <h1 className="font-titulo text-3xl font-bold">Dashboard monitor</h1>
+        <h1 className="ds-subtitle text-[28px]">Dashboard monitor</h1>
         <div className="flex items-center gap-3">
           <Link
             href="/gestor-vendas"
-            className="rounded-md border border-dobro-cinza-escuro/15 px-3 py-1.5 text-sm hover:bg-dobro-cinza-claro/50"
+            className="rounded-md border border-[#333] px-3 py-1.5 text-sm text-white/80 transition-colors hover:border-[#6528d3] hover:bg-white/5"
           >
             Painel Gestor de Vendas
           </Link>
           <Link
             href="/monitor/scudo"
-            className="rounded-md border border-dobro-cinza-escuro/15 px-3 py-1.5 text-sm hover:bg-dobro-cinza-claro/50"
+            className="rounded-md border border-[#333] px-3 py-1.5 text-sm text-white/80 transition-colors hover:border-[#6528d3] hover:bg-white/5"
           >
             Ver dashboard Scudo
           </Link>
           <Link
             href="/monitor/2fa"
-            className="rounded-md border border-dobro-cinza-escuro/15 px-3 py-1.5 text-sm hover:bg-dobro-cinza-claro/50"
+            className="rounded-md border border-[#333] px-3 py-1.5 text-sm text-white/80 transition-colors hover:border-[#6528d3] hover:bg-white/5"
           >
             2FA
           </Link>
           <form action="/api/auth/logout" method="post">
             <button
               type="submit"
-              className="text-sm text-dobro-cinza-escuro/70"
+              className="text-sm text-white/70 transition-colors hover:text-white"
             >
               Sair ({session.email})
             </button>
@@ -90,23 +90,23 @@ export default async function MonitorDashboardPage({
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="rounded border border-dobro-cinza-escuro/10 bg-dobro-cinza-claro/30 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-dobro-cinza-escuro/60">Correções (30d)</p>
-          <p className="mt-1 font-mono text-xl font-semibold">{corrCount}</p>
+        <div className="ds-card p-3">
+          <p className="text-[11px] uppercase tracking-wider text-white/60">Correções (30d)</p>
+          <p className="mt-1 font-mono text-xl font-semibold text-white">{corrCount}</p>
         </div>
-        <div className="rounded border border-dobro-cinza-escuro/10 bg-dobro-cinza-claro/30 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-dobro-cinza-escuro/60">Custo total (30d)</p>
-          <p className="mt-1 font-mono text-xl font-semibold">${totalCost.toFixed(2)}</p>
+        <div className="ds-card p-3">
+          <p className="text-[11px] uppercase tracking-wider text-white/60">Custo total (30d)</p>
+          <p className="mt-1 font-mono text-xl font-semibold text-white">${totalCost.toFixed(2)}</p>
         </div>
-        <div className="rounded border border-dobro-cinza-escuro/10 bg-dobro-cinza-claro/30 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-dobro-cinza-escuro/60">Média / correção</p>
-          <p className="mt-1 font-mono text-xl font-semibold">
+        <div className="ds-card p-3">
+          <p className="text-[11px] uppercase tracking-wider text-white/60">Média / correção</p>
+          <p className="mt-1 font-mono text-xl font-semibold text-white">
             ${avgCost.toFixed(4)}
           </p>
         </div>
-        <div className="rounded border border-dobro-cinza-escuro/10 bg-dobro-cinza-claro/30 p-3">
-          <p className="text-[11px] uppercase tracking-wider text-dobro-cinza-escuro/60">Tokens (30d)</p>
-          <p className="mt-1 font-mono text-xs text-dobro-cinza-escuro/80">
+        <div className="ds-card p-3">
+          <p className="text-[11px] uppercase tracking-wider text-white/60">Tokens (30d)</p>
+          <p className="mt-1 font-mono text-xs text-white/80">
             <span className="font-semibold">{(costStats?.tokensIn ?? 0).toLocaleString('pt-BR')}</span> in
             {' · '}
             <span className="font-semibold">{(costStats?.tokensOut ?? 0).toLocaleString('pt-BR')}</span> out
@@ -114,14 +114,14 @@ export default async function MonitorDashboardPage({
         </div>
       </div>
 
-      <nav className="flex flex-wrap gap-2 border-b border-dobro-cinza-escuro/10 pb-3">
+      <nav className="flex flex-wrap gap-2 border-b border-[#333] pb-3">
         {FILTERS.map((f) => (
           <Link
             key={f.value}
             href={`/monitor/dashboard?filter=${f.value}`}
-            className={`rounded px-3 py-1 text-sm ${active.value === f.value
-              ? 'bg-dobro-azul text-white'
-              : 'bg-dobro-cinza-claro text-dobro-cinza-escuro hover:bg-dobro-cinza-escuro/10'
+            className={`rounded px-3 py-1 text-sm transition-colors ${active.value === f.value
+              ? 'bg-[#6528d3] text-white'
+              : 'bg-[#1a1a1a] text-white/80 hover:bg-white/10'
               }`}
           >
             {f.label}
@@ -130,12 +130,12 @@ export default async function MonitorDashboardPage({
       </nav>
 
       {rows.length === 0 ? (
-        <p className="rounded bg-dobro-cinza-claro p-8 text-center text-dobro-cinza-escuro/70">
+        <p className="ds-card p-8 text-center text-white/70">
           Nada aqui nesse filtro.
         </p>
       ) : (
-        <table className="w-full overflow-hidden rounded border border-dobro-cinza-escuro/10 text-sm">
-          <thead className="bg-dobro-cinza-claro text-left text-xs uppercase text-dobro-cinza-escuro/70">
+        <table className="w-full overflow-hidden rounded-lg border border-[#333] text-sm">
+          <thead className="bg-[#1a1a1a] text-left text-xs uppercase text-white/70">
             <tr>
               <th className="px-3 py-2">Aluno</th>
               <th className="px-3 py-2">Repositório</th>
@@ -146,14 +146,14 @@ export default async function MonitorDashboardPage({
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className="border-t border-dobro-cinza-escuro/5 hover:bg-dobro-cinza-claro/40">
-                <td className="px-3 py-2">
+              <tr key={r.id} className="border-t border-white/5 hover:bg-white/5">
+                <td className="px-3 py-2 text-white">
                   <div className="flex items-center gap-2">
                     <span>{r.studentEmail}</span>
                     <span
                       className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wide ${r.courseVersion === '1.0'
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-dobro-cinza-claro text-dobro-cinza-escuro/60'
+                        ? 'bg-[#ff6b35]/15 text-[#fdba74]'
+                        : 'bg-white/10 text-white/60'
                         }`}
                       title={r.courseVersion === '1.0' ? 'Cohort legado — DevQuest 1.0' : 'DevQuest 2.0'}
                     >
@@ -161,7 +161,7 @@ export default async function MonitorDashboardPage({
                     </span>
                   </div>
                 </td>
-                <td className="px-3 py-2 font-mono text-xs">
+                <td className="px-3 py-2 font-mono text-xs text-white/80">
                   {r.githubUrl.replace('https://github.com/', '')}
                 </td>
                 <td className="px-3 py-2">
@@ -169,7 +169,7 @@ export default async function MonitorDashboardPage({
                     {statusLabel(r.status)}
                   </span>
                 </td>
-                <td className="px-3 py-2 text-xs text-dobro-cinza-escuro/60">
+                <td className="px-3 py-2 text-xs text-white/60">
                   {new Date(r.submittedAt).toLocaleString('pt-BR', {
                     dateStyle: 'short',
                     timeStyle: 'short',
@@ -178,7 +178,7 @@ export default async function MonitorDashboardPage({
                 <td className="px-3 py-2 text-right">
                   <Link
                     href={`/monitor/submissions/${r.id}`}
-                    className="text-dobro-laranja hover:underline"
+                    className="text-[#6528d3] hover:underline"
                   >
                     Abrir →
                   </Link>
