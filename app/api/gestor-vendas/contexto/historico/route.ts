@@ -22,6 +22,7 @@ import { invalidateChatContextCache } from '@/lib/sales-settings';
 import { sendChatContextAlert } from '@/lib/sales-alerts';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 const KEY = 'chat_context' as const;
 const LIST_LIMIT = 20;

@@ -20,6 +20,7 @@ import { maybeScheduleEvalAfterContextChange } from '@/lib/sales-eval';
 import { env } from '@/lib/env';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 const KEY = 'chat_context' as const;
 const MAX_LEN = 4000;

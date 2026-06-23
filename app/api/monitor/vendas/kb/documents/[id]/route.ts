@@ -6,6 +6,7 @@ import { kbDocuments, kbDocumentVersions, kbChunks } from '@/drizzle/schema';
 import { sql } from 'drizzle-orm';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 // GET /api/monitor/vendas/kb/documents/[id]
 export async function GET(req: Request, { params }: { params: { id: string } }) {

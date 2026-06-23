@@ -8,6 +8,7 @@ import { extractText, ingestDocument, parseFaqPairs, type FaqPair } from '@/lib/
 import { getClientIp } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 // PDFs até 5MB: multipart precisa de limite maior que o default Next.js (4MB)
 export const maxDuration = 60;
 
