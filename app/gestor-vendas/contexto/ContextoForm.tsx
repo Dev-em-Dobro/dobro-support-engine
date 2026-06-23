@@ -59,15 +59,15 @@ export function ContextoForm({ initialValue, updatedAt, updatedByEmail, requires
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="Ex: Estamos no lançamento da DevQuest 6.0 (cupom DOBRO20 vale até 30/06). Priorize destacar a comunidade Discord e a mentoria do DevQuest+..."
-        className="w-full resize-y rounded-md border border-dobro-cinza-escuro/15 bg-white px-3.5 py-2.5 text-sm text-dobro-cinza-escuro focus:border-dobro-azul focus:outline-none focus:ring-2 focus:ring-dobro-azul/20 transition-colors"
+        className="w-full resize-y rounded-md border border-[#333] bg-[#1a1a1a] px-3.5 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#6528d3] focus:outline-none focus:ring-2 focus:ring-[#6528d3]/20 transition-colors"
       />
 
       <div className="flex items-center justify-between text-xs">
-        <span className={over ? 'text-red-600' : 'text-dobro-cinza-escuro/50'}>
+        <span className={over ? 'text-[#fca5a5]' : 'text-white/50'}>
           {value.length} / {MAX_LEN}
         </span>
         {lastSavedAt && (
-          <span className="text-dobro-cinza-escuro/50">
+          <span className="text-white/50">
             Última edição: {new Date(lastSavedAt).toLocaleString('pt-BR')}
             {lastSavedBy ? ` por ${lastSavedBy}` : ''}
           </span>
@@ -76,10 +76,10 @@ export function ContextoForm({ initialValue, updatedAt, updatedByEmail, requires
 
       {status && (
         <div
-          className={`rounded-md px-4 py-3 text-sm ${
+          className={`rounded-md border px-4 py-3 text-sm ${
             status.type === 'error'
-              ? 'bg-red-50 text-red-700 ring-1 ring-red-200'
-              : 'bg-green-50 text-green-700 ring-1 ring-green-200'
+              ? 'border-[#ef4444]/40 bg-[#ef4444]/10 text-[#fca5a5]'
+              : 'border-[#22c55e]/40 bg-[#22c55e]/10 text-[#6ee7b7]'
           }`}
         >
           {status.msg}
@@ -90,7 +90,7 @@ export function ContextoForm({ initialValue, updatedAt, updatedByEmail, requires
         <button
           type="submit"
           disabled={saving || over}
-          className="rounded-lg bg-dobro-azul px-5 py-2.5 text-sm font-bold text-white hover:bg-dobro-azul/90 disabled:opacity-50 transition-colors"
+          className="ds-btn ds-btn-primary px-5 py-2.5 text-sm"
         >
           {saving ? 'Salvando...' : requiresApproval ? 'Enviar para aprovação' : 'Salvar'}
         </button>

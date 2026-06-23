@@ -27,20 +27,20 @@ export default async function ComoFuncionaPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <Link href="/gestor-vendas" className="text-sm text-dobro-azul hover:underline">
+      <Link href="/gestor-vendas" className="text-sm text-[#6528d3] hover:underline">
         ← Voltar ao painel
       </Link>
-      <h1 className="mt-2 font-titulo text-2xl font-bold">Como o Chat funciona</h1>
-      <p className="mt-2 text-sm text-dobro-cinza-escuro/70">
-        Texto que os vendedores leem em <Link href="/vendas/como-funciona" className="text-dobro-azul hover:underline">/vendas/como-funciona</Link>.
+      <h1 className="ds-subtitle mt-2">Como o Chat funciona</h1>
+      <p className="mt-2 text-sm text-white/70">
+        Texto que os vendedores leem em <Link href="/vendas/como-funciona" className="text-[#6528d3] hover:underline">/vendas/como-funciona</Link>.
         Explique o que o agente sabe responder, limites, quando criar nova conversa, como reportar
         erro, etc. Aceita parágrafos simples (sem HTML).
       </p>
-      <p className="mt-1 text-xs text-dobro-cinza-escuro/50">
+      <p className="mt-1 text-xs text-white/50">
         Limite: 20.000 caracteres.
       </p>
 
-      <div className="mt-6 rounded-xl border border-dobro-cinza-escuro/10 bg-white p-6 shadow-sm">
+      <div className="ds-card mt-6 p-6">
         <ComoFuncionaForm
           initialValue={initial.value ?? ''}
           updatedAt={initial.updatedAt ? new Date(initial.updatedAt).toISOString() : null}

@@ -50,12 +50,12 @@ export function PendingReview({
   }
 
   return (
-    <div className="rounded-xl border border-amber-300 bg-amber-50 p-5 shadow-sm">
+    <div className="rounded-xl border border-[#ff6b35]/30 bg-[#ff6b35]/10 p-5 shadow-sm">
       <div className="flex items-center gap-2">
-        <span className="rounded-full bg-amber-200 px-2 py-0.5 text-xs font-bold text-amber-800">
+        <span className="rounded-full bg-[#ff6b35]/20 px-2 py-0.5 text-xs font-bold text-[#ff6b35]">
           aguardando aprovação
         </span>
-        <span className="text-sm text-amber-900/80">
+        <span className="text-sm text-[#fdba74]">
           Proposta de {pendingByEmail ?? 'desconhecido'}
           {pendingAt ? ` · ${new Date(pendingAt).toLocaleString('pt-BR')}` : ''}
         </span>
@@ -63,31 +63,31 @@ export function PendingReview({
 
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-amber-900/60">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-[#fdba74]/80">
             Atual (no ar)
           </p>
-          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-md bg-white px-3 py-2 text-xs text-dobro-cinza-escuro/80 ring-1 ring-amber-200">
+          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-md border border-[#333] bg-[#1a1a1a] px-3 py-2 text-xs text-white/80">
             {currentValue.trim() || '(vazio)'}
           </pre>
         </div>
         <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-amber-900/60">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-[#fdba74]/80">
             Proposto
           </p>
-          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-md bg-white px-3 py-2 text-xs text-dobro-cinza-escuro/80 ring-1 ring-amber-200">
+          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-md border border-[#333] bg-[#1a1a1a] px-3 py-2 text-xs text-white/80">
             {pendingValue.trim() || '(vazio)'}
           </pre>
         </div>
       </div>
 
       {err && (
-        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">
+        <p className="mt-3 rounded-md border border-[#ef4444]/40 bg-[#ef4444]/10 px-3 py-2 text-sm text-[#fca5a5]">
           {err}
         </p>
       )}
 
       {isAuthor ? (
-        <p className="mt-4 text-sm text-amber-900/80">
+        <p className="mt-4 text-sm text-[#fdba74]">
           Você é o autor desta proposta. A aprovação precisa ser feita por{' '}
           <strong>outro gestor</strong>. Você pode descartá-la abaixo.
         </p>
@@ -98,7 +98,7 @@ export function PendingReview({
           type="button"
           onClick={() => act('approve')}
           disabled={isAuthor || loading !== null}
-          className="rounded-lg bg-green-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-40 transition-colors"
+          className="ds-btn ds-btn-success px-5 py-2.5 text-sm"
         >
           {loading === 'approve' ? 'Aprovando...' : 'Aprovar e publicar'}
         </button>
@@ -106,7 +106,7 @@ export function PendingReview({
           type="button"
           onClick={() => act('reject')}
           disabled={loading !== null}
-          className="rounded-lg border border-red-300 px-5 py-2.5 text-sm font-bold text-red-700 hover:bg-red-50 disabled:opacity-40 transition-colors"
+          className="rounded-lg border border-[#ef4444]/50 px-5 py-2.5 text-sm font-bold text-[#fca5a5] hover:bg-[#ef4444]/10 disabled:opacity-40 transition-colors"
         >
           {loading === 'reject' ? 'Descartando...' : 'Descartar'}
         </button>
