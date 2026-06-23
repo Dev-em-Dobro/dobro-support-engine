@@ -28,6 +28,7 @@ import {
 } from '@/lib/totp';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 const ConfirmBody = z.object({
   code: z.string().regex(/^\d{6}$/, 'código de 6 dígitos'),

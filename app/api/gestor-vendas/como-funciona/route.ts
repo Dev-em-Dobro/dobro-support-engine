@@ -15,6 +15,7 @@ import { salesSettings, salesAuditEvents } from '@/drizzle/schema';
 import { getClientIp } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 const KEY = 'how_it_works' as const;
 const MAX_LEN = 20000;
