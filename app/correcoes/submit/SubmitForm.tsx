@@ -4,10 +4,10 @@ import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
 const inputCls =
-  'rounded-md border border-dobro-cinza-escuro/15 bg-dobro-cinza-claro/40 px-3.5 py-2.5 text-dobro-cinza-escuro placeholder:text-dobro-cinza-escuro/40 focus:border-dobro-azul focus:bg-dobro-cinza-claro/60 focus:outline-none focus:ring-2 focus:ring-dobro-azul/20 transition-colors';
+  'rounded-md border border-[#333] bg-[#1a1a1a] px-3.5 py-2.5 text-white placeholder:text-white/40 focus:border-[#6528d3] focus:outline-none focus:ring-2 focus:ring-[#6528d3]/20 transition-colors';
 
-const labelTitleCls = 'font-titulo text-sm font-semibold';
-const helpCls = 'text-xs text-dobro-cinza-escuro/60';
+const labelTitleCls = 'font-titulo text-sm font-semibold text-white';
+const helpCls = 'text-xs text-white/60';
 
 export default function SubmitForm() {
   const router = useRouter();
@@ -63,7 +63,7 @@ export default function SubmitForm() {
 
       <label className="flex flex-col gap-1.5">
         <span className={labelTitleCls}>
-          Link do deploy <span className="font-normal text-dobro-cinza-escuro/50">(opcional)</span>
+          Link do deploy <span className="font-normal text-white/50">(opcional)</span>
         </span>
         <input
           type="url"
@@ -75,7 +75,7 @@ export default function SubmitForm() {
       </label>
 
       {err && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200">
+        <p className="rounded-md border border-[#ef4444]/40 bg-[#ef4444]/10 px-3 py-2 text-sm text-[#fca5a5]">
           {err}
         </p>
       )}
@@ -83,7 +83,7 @@ export default function SubmitForm() {
       <button
         type="submit"
         disabled={loading}
-        className="mt-1 rounded-md bg-dobro-laranja px-5 py-3 font-titulo text-sm font-bold uppercase tracking-wide text-white shadow-sm hover:bg-dobro-laranja/90 disabled:opacity-50 transition-colors"
+        className="ds-btn ds-btn-primary mt-1 px-5 py-3 text-sm uppercase tracking-wide"
       >
         {loading ? 'Enviando...' : 'Corrigir meu desafio'}
       </button>
