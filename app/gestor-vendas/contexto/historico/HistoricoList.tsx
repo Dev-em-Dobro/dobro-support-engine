@@ -47,7 +47,7 @@ export function HistoricoList({ versions, currentValue }: Props) {
 
   if (versions.length === 0) {
     return (
-      <p className="rounded-md bg-dobro-cinza-escuro/5 px-4 py-3 text-sm text-dobro-cinza-escuro/60">
+      <p className="rounded-md border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-white/60">
         Nenhuma versão registrada ainda. O histórico começa a partir da próxima edição.
       </p>
     );
@@ -57,10 +57,10 @@ export function HistoricoList({ versions, currentValue }: Props) {
     <div className="space-y-4">
       {status && (
         <div
-          className={`rounded-md px-4 py-3 text-sm ${
+          className={`rounded-md border px-4 py-3 text-sm ${
             status.type === 'error'
-              ? 'bg-red-50 text-red-700 ring-1 ring-red-200'
-              : 'bg-green-50 text-green-700 ring-1 ring-green-200'
+              ? 'border-[#ef4444]/40 bg-[#ef4444]/10 text-[#fca5a5]'
+              : 'border-[#22c55e]/40 bg-[#22c55e]/10 text-[#6ee7b7]'
           }`}
         >
           {status.msg}
@@ -73,17 +73,17 @@ export function HistoricoList({ versions, currentValue }: Props) {
           return (
             <li
               key={v.version}
-              className="rounded-xl border border-dobro-cinza-escuro/10 bg-white p-4 shadow-sm"
+              className="ds-card p-4"
             >
               <div className="flex items-center justify-between gap-3">
-                <div className="text-sm">
+                <div className="text-sm text-white">
                   <span className="font-bold">v{v.version}</span>
                   {isCurrent && (
-                    <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                    <span className="ml-2 rounded-full bg-[#22c55e]/15 px-2 py-0.5 text-xs font-medium text-[#6ee7b7]">
                       em uso
                     </span>
                   )}
-                  <span className="ml-2 text-dobro-cinza-escuro/50">
+                  <span className="ml-2 text-white/50">
                     {new Date(v.editedAt).toLocaleString('pt-BR')}
                     {v.editedByEmail ? ` · ${v.editedByEmail}` : ''}
                   </span>
@@ -92,12 +92,12 @@ export function HistoricoList({ versions, currentValue }: Props) {
                   type="button"
                   onClick={() => handleRestore(v.version)}
                   disabled={isCurrent || restoring !== null}
-                  className="shrink-0 rounded-lg border border-dobro-azul px-3 py-1.5 text-xs font-bold text-dobro-azul hover:bg-dobro-azul/5 disabled:opacity-40 transition-colors"
+                  className="shrink-0 rounded-lg border border-[#6528d3] px-3 py-1.5 text-xs font-bold text-[#a78bfa] hover:bg-[#6528d3]/10 disabled:opacity-40 transition-colors"
                 >
                   {restoring === v.version ? 'Restaurando...' : 'Restaurar'}
                 </button>
               </div>
-              <pre className="mt-3 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-md bg-dobro-cinza-escuro/5 px-3 py-2 text-xs text-dobro-cinza-escuro/80">
+              <pre className="mt-3 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-md border border-[#333] bg-[#1a1a1a] px-3 py-2 text-xs text-white/80">
                 {v.value.trim() || '(vazio)'}
               </pre>
             </li>

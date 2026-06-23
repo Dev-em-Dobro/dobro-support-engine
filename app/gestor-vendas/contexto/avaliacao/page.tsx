@@ -37,11 +37,11 @@ export default async function AvaliacaoPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <Link href="/gestor-vendas/contexto" className="text-sm text-dobro-azul hover:underline">
+      <Link href="/gestor-vendas/contexto" className="text-sm text-[#6528d3] hover:underline">
         ← Voltar ao contexto
       </Link>
-      <h1 className="mt-2 font-titulo text-2xl font-bold">Avaliação do Agente</h1>
-      <p className="mt-2 text-sm text-dobro-cinza-escuro/70">
+      <h1 className="ds-subtitle mt-2">Avaliação do Agente</h1>
+      <p className="mt-2 text-sm text-white/70">
         Roda {EVAL_QUESTIONS.length} perguntas canônicas contra o agente e compara as respostas com
         um baseline confiável. Divergência alta indica que o comportamento mudou — útil pra flagrar
         um <strong>contexto envenenado</strong> que o filtro de texto não pega.

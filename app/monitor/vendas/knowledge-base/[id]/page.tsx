@@ -9,10 +9,10 @@ import { eq, desc, sql } from 'drizzle-orm';
 export const metadata = { title: 'Detalhe do documento · KB Monitor' };
 
 const statusBadge: Record<string, string> = {
-  active: 'bg-emerald-100 text-emerald-700',
-  processing: 'bg-amber-100 text-amber-700',
-  failed: 'bg-red-100 text-red-700',
-  archived: 'bg-blue-100 text-blue-700',
+  active: 'bg-[#22c55e]/15 text-[#6ee7b7]',
+  processing: 'bg-[#ff6b35]/15 text-[#fdba74]',
+  failed: 'bg-[#ef4444]/15 text-[#fca5a5]',
+  archived: 'bg-[#3b82f6]/15 text-[#93c5fd]',
 };
 
 export default async function KbDocumentDetailPage({
@@ -71,25 +71,25 @@ export default async function KbDocumentDetailPage({
       <div>
         <Link
           href="/monitor/vendas/knowledge-base"
-          className="text-sm text-dobro-azul hover:underline"
+          className="text-sm text-[#6528d3] hover:underline"
         >
           ← Base de Conhecimento
         </Link>
         <div className="mt-3 flex items-start justify-between gap-4">
           <div>
-            <h1 className="font-titulo text-2xl font-bold">{doc.title}</h1>
+            <h1 className="ds-subtitle">{doc.title}</h1>
             {doc.description && (
-              <p className="mt-1 text-sm text-dobro-cinza-escuro/70">{doc.description}</p>
+              <p className="mt-1 text-sm text-white/70">{doc.description}</p>
             )}
             <div className="mt-2 flex items-center gap-3">
               <span
-                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadge[doc.status] ?? 'bg-blue-100 text-blue-700'}`}
+                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadge[doc.status] ?? 'bg-[#3b82f6]/15 text-[#93c5fd]'}`}
               >
                 {doc.archivedAt ? 'arquivado' : doc.status}
               </span>
-              <span className="text-xs text-dobro-cinza-escuro/50">{doc.sourceType.toUpperCase()}</span>
+              <span className="text-xs text-white/50">{doc.sourceType.toUpperCase()}</span>
               {doc.tags.length > 0 && (
-                <span className="text-xs text-dobro-cinza-escuro/50">{doc.tags.join(', ')}</span>
+                <span className="text-xs text-white/50">{doc.tags.join(', ')}</span>
               )}
             </div>
           </div>
@@ -97,40 +97,40 @@ export default async function KbDocumentDetailPage({
         </div>
       </div>
 
-      <div className="rounded-xl border border-dobro-cinza-escuro/10 bg-white shadow-sm overflow-hidden">
-        <div className="border-b border-dobro-cinza-escuro/10 px-5 py-3">
-          <h2 className="font-semibold text-sm">Versões ({versions.length})</h2>
+      <div className="rounded-xl border border-[#333] bg-[#0d0d0d] shadow-sm overflow-hidden">
+        <div className="border-b border-[#333] px-5 py-3">
+          <h2 className="font-semibold text-sm text-white">Versões ({versions.length})</h2>
         </div>
         <table className="w-full text-sm">
-          <thead className="bg-dobro-cinza-claro">
+          <thead className="bg-[#1a1a1a]">
             <tr>
-              <th className="px-4 py-2.5 text-left text-xs font-semibold text-dobro-cinza-escuro/60">Versão</th>
-              <th className="px-4 py-2.5 text-left text-xs font-semibold text-dobro-cinza-escuro/60">Chars</th>
-              <th className="px-4 py-2.5 text-left text-xs font-semibold text-dobro-cinza-escuro/60">Chunks</th>
-              <th className="px-4 py-2.5 text-left text-xs font-semibold text-dobro-cinza-escuro/60">Tokens</th>
-              <th className="px-4 py-2.5 text-left text-xs font-semibold text-dobro-cinza-escuro/60">Custo</th>
-              <th className="px-4 py-2.5 text-left text-xs font-semibold text-dobro-cinza-escuro/60">Autor</th>
-              <th className="px-4 py-2.5 text-left text-xs font-semibold text-dobro-cinza-escuro/60">Data</th>
+              <th className="px-4 py-2.5 text-left text-xs font-semibold text-white/60">Versão</th>
+              <th className="px-4 py-2.5 text-left text-xs font-semibold text-white/60">Chars</th>
+              <th className="px-4 py-2.5 text-left text-xs font-semibold text-white/60">Chunks</th>
+              <th className="px-4 py-2.5 text-left text-xs font-semibold text-white/60">Tokens</th>
+              <th className="px-4 py-2.5 text-left text-xs font-semibold text-white/60">Custo</th>
+              <th className="px-4 py-2.5 text-left text-xs font-semibold text-white/60">Autor</th>
+              <th className="px-4 py-2.5 text-left text-xs font-semibold text-white/60">Data</th>
             </tr>
           </thead>
           <tbody>
             {versions.map((v) => (
               <tr
                 key={v.id}
-                className={`border-b border-dobro-cinza-escuro/10 ${v.id === doc.currentVersionId ? 'bg-emerald-100' : ''}`}
+                className={`border-b border-white/5 ${v.id === doc.currentVersionId ? 'bg-[#22c55e]/10' : ''}`}
               >
-                <td className="px-4 py-2.5 font-medium">
+                <td className="px-4 py-2.5 font-medium text-white">
                   v{v.version}
                   {v.id === doc.currentVersionId && (
-                    <span className="ml-2 text-[10px] font-bold uppercase text-green-600">atual</span>
+                    <span className="ml-2 text-[10px] font-bold uppercase text-[#6ee7b7]">atual</span>
                   )}
                 </td>
-                <td className="px-4 py-2.5 text-dobro-cinza-escuro/70">{v.charCount.toLocaleString('pt-BR')}</td>
-                <td className="px-4 py-2.5 text-dobro-cinza-escuro/70">{v.chunkCount}</td>
-                <td className="px-4 py-2.5 text-dobro-cinza-escuro/70">{v.embeddingTokens.toLocaleString('pt-BR')}</td>
-                <td className="px-4 py-2.5 text-dobro-cinza-escuro/70">${Number(v.embeddingCostUsd).toFixed(4)}</td>
-                <td className="px-4 py-2.5 text-xs text-dobro-cinza-escuro/60">{v.createdByEmail}</td>
-                <td className="px-4 py-2.5 text-xs text-dobro-cinza-escuro/60">
+                <td className="px-4 py-2.5 text-white/70">{v.charCount.toLocaleString('pt-BR')}</td>
+                <td className="px-4 py-2.5 text-white/70">{v.chunkCount}</td>
+                <td className="px-4 py-2.5 text-white/70">{v.embeddingTokens.toLocaleString('pt-BR')}</td>
+                <td className="px-4 py-2.5 text-white/70">${Number(v.embeddingCostUsd).toFixed(4)}</td>
+                <td className="px-4 py-2.5 text-xs text-white/60">{v.createdByEmail}</td>
+                <td className="px-4 py-2.5 text-xs text-white/60">
                   {new Date(v.createdAt).toLocaleDateString('pt-BR')}
                 </td>
               </tr>
@@ -140,18 +140,18 @@ export default async function KbDocumentDetailPage({
       </div>
 
       {chunks.length > 0 && (
-        <details className="rounded-xl border border-dobro-cinza-escuro/10 bg-white shadow-sm">
-          <summary className="cursor-pointer px-5 py-3 text-sm font-semibold hover:bg-dobro-cinza-claro">
+        <details className="rounded-xl border border-[#333] bg-[#0d0d0d] shadow-sm">
+          <summary className="cursor-pointer px-5 py-3 text-sm font-semibold text-white hover:bg-white/5">
             Chunks da versão atual ({chunks.length})
           </summary>
-          <div className="divide-y divide-dobro-cinza-escuro/5 max-h-96 overflow-y-auto">
+          <div className="divide-y divide-white/5 max-h-96 overflow-y-auto">
             {chunks.map((c) => (
               <div key={c.id} className="px-5 py-3">
                 <div className="mb-1 flex items-center gap-2">
-                  <span className="text-xs font-mono text-dobro-cinza-escuro/60">#{c.chunkIndex}</span>
-                  <span className="text-xs text-dobro-cinza-escuro/60">{c.tokenCount} tokens</span>
+                  <span className="text-xs font-mono text-white/60">#{c.chunkIndex}</span>
+                  <span className="text-xs text-white/60">{c.tokenCount} tokens</span>
                 </div>
-                <p className="text-xs text-dobro-cinza-escuro/80 whitespace-pre-wrap leading-relaxed">
+                <p className="text-xs text-white/80 whitespace-pre-wrap leading-relaxed">
                   {c.content}
                 </p>
               </div>

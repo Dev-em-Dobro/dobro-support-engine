@@ -8,10 +8,10 @@ import { desc, sql, eq } from 'drizzle-orm';
 export const metadata = { title: 'Knowledge Base · Monitor' };
 
 const statusBadge: Record<string, string> = {
-  active: 'bg-emerald-100 text-emerald-700',
-  processing: 'bg-amber-100 text-amber-700',
-  failed: 'bg-red-100 text-red-700',
-  archived: 'bg-blue-100 text-blue-700',
+  active: 'bg-[#22c55e]/15 text-[#6ee7b7]',
+  processing: 'bg-[#ff6b35]/15 text-[#fdba74]',
+  failed: 'bg-[#ef4444]/15 text-[#fca5a5]',
+  archived: 'bg-[#3b82f6]/15 text-[#93c5fd]',
 };
 
 const typeLabel: Record<string, string> = {
@@ -47,35 +47,35 @@ export default async function KnowledgeBasePage() {
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-titulo text-2xl font-bold">Base de Conhecimento</h1>
-          <p className="text-sm text-dobro-cinza-escuro/60 mt-1">
+          <h1 className="ds-subtitle">Base de Conhecimento</h1>
+          <p className="text-sm text-white/60 mt-1">
             {docs.length} documento{docs.length !== 1 ? 's' : ''}
           </p>
         </div>
         <Link
           href="/monitor/vendas/knowledge-base/new"
-          className="rounded-lg bg-dobro-azul px-5 py-2.5 text-sm font-bold text-white hover:bg-dobro-azul/90 transition-colors"
+          className="rounded-lg bg-[#6528d3] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#5020b0] transition-colors"
         >
           + Cadastrar documento
         </Link>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-dobro-cinza-escuro/10 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-[#333] bg-[#0d0d0d] shadow-sm">
         <table className="w-full text-sm">
-          <thead className="bg-dobro-cinza-claro border-b border-dobro-cinza-escuro/10">
+          <thead className="bg-[#1a1a1a] border-b border-[#333]">
             <tr>
-              <th className="px-4 py-3 text-left font-semibold text-dobro-cinza-escuro/70">Título</th>
-              <th className="px-4 py-3 text-left font-semibold text-dobro-cinza-escuro/70">Tipo</th>
-              <th className="px-4 py-3 text-left font-semibold text-dobro-cinza-escuro/70">Status</th>
-              <th className="px-4 py-3 text-left font-semibold text-dobro-cinza-escuro/70">Versões</th>
-              <th className="px-4 py-3 text-left font-semibold text-dobro-cinza-escuro/70">Autor</th>
-              <th className="px-4 py-3 text-left font-semibold text-dobro-cinza-escuro/70">Atualizado</th>
+              <th className="px-4 py-3 text-left font-semibold text-white/70">Título</th>
+              <th className="px-4 py-3 text-left font-semibold text-white/70">Tipo</th>
+              <th className="px-4 py-3 text-left font-semibold text-white/70">Status</th>
+              <th className="px-4 py-3 text-left font-semibold text-white/70">Versões</th>
+              <th className="px-4 py-3 text-left font-semibold text-white/70">Autor</th>
+              <th className="px-4 py-3 text-left font-semibold text-white/70">Atualizado</th>
             </tr>
           </thead>
           <tbody>
             {docs.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-dobro-cinza-escuro/60">
+                <td colSpan={6} className="px-4 py-8 text-center text-white/60">
                   Nenhum documento cadastrado. Clique em &quot;Cadastrar documento&quot; para começar.
                 </td>
               </tr>
@@ -83,29 +83,29 @@ export default async function KnowledgeBasePage() {
             {docs.map((doc) => (
               <tr
                 key={doc.id}
-                className="border-b border-dobro-cinza-escuro/10 hover:bg-dobro-cinza-claro transition-colors"
+                className="border-b border-white/5 hover:bg-white/5 transition-colors"
               >
                 <td className="px-4 py-3">
                   <Link
                     href={`/monitor/vendas/knowledge-base/${doc.id}`}
-                    className="font-medium text-dobro-azul hover:underline"
+                    className="font-medium text-[#6528d3] hover:underline"
                   >
                     {doc.title}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-dobro-cinza-escuro/70">
+                <td className="px-4 py-3 text-white/70">
                   {typeLabel[doc.sourceType] ?? doc.sourceType}
                 </td>
                 <td className="px-4 py-3">
                   <span
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadge[doc.status] ?? 'bg-blue-100 text-blue-700'}`}
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadge[doc.status] ?? 'bg-[#3b82f6]/15 text-[#93c5fd]'}`}
                   >
                     {doc.archivedAt ? 'arquivado' : doc.status}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-dobro-cinza-escuro/70">{doc.versionCount}</td>
-                <td className="px-4 py-3 text-dobro-cinza-escuro/70 text-xs">{doc.createdByEmail}</td>
-                <td className="px-4 py-3 text-dobro-cinza-escuro/60 text-xs">
+                <td className="px-4 py-3 text-white/70">{doc.versionCount}</td>
+                <td className="px-4 py-3 text-white/70 text-xs">{doc.createdByEmail}</td>
+                <td className="px-4 py-3 text-white/60 text-xs">
                   {new Date(doc.updatedAt).toLocaleDateString('pt-BR')}
                 </td>
               </tr>

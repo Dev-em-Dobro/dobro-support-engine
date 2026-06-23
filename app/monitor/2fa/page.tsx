@@ -23,16 +23,16 @@ export default async function TwoFactorPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <Link href="/monitor/dashboard" className="text-sm text-dobro-azul hover:underline">
+      <Link href="/monitor/dashboard" className="text-sm text-[#6528d3] hover:underline">
         ← Voltar ao painel
       </Link>
-      <h1 className="mt-2 font-titulo text-2xl font-bold">Verificação em duas etapas</h1>
-      <p className="mt-2 text-sm text-dobro-cinza-escuro/70">
+      <h1 className="ds-subtitle mt-2">Verificação em duas etapas</h1>
+      <p className="mt-2 text-sm text-white/70">
         Adiciona um segundo fator (código do app autenticador) ao seu login. Protege a conta de
         gestor — que controla o comportamento do agente de vendas — mesmo que a senha vaze.
       </p>
 
-      <div className="mt-6 rounded-xl border border-dobro-cinza-escuro/10 bg-white p-6 shadow-sm">
+      <div className="ds-card mt-6 p-6">
         <TwoFactorSetup initiallyEnabled={enabled} email={session.email} />
       </div>
     </div>

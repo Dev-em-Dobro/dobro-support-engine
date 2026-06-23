@@ -65,7 +65,7 @@ export function KbDocumentActions({ documentId, isArchived, hasVersion, sourceTy
     }
   }
 
-  const btnCls = 'rounded-lg border border-dobro-cinza-escuro/15 px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-dobro-cinza-claro disabled:opacity-40';
+  const btnCls = 'rounded-lg border border-[#333] px-3 py-1.5 text-xs font-semibold text-white/80 transition-colors hover:bg-white/5 disabled:opacity-40';
 
   return (
     <div className="flex flex-wrap gap-2">
@@ -87,7 +87,7 @@ export function KbDocumentActions({ documentId, isArchived, hasVersion, sourceTy
       )}
       {isArchived ? (
         <button
-          className={`${btnCls} border-emerald-400 text-emerald-700`}
+          className={`${btnCls} border-[#22c55e]/50 text-[#6ee7b7]`}
           disabled={!!loading}
           onClick={() => action('reactivate')}
         >
@@ -95,7 +95,7 @@ export function KbDocumentActions({ documentId, isArchived, hasVersion, sourceTy
         </button>
       ) : (
         <button
-          className={`${btnCls} border-red-200 text-red-600`}
+          className={`${btnCls} border-[#ef4444]/50 text-[#fca5a5]`}
           disabled={!!loading}
           onClick={() => {
             if (confirm('Arquivar este documento? Ele sairá do retrieval mas o histórico fica preservado.')) {
@@ -108,8 +108,8 @@ export function KbDocumentActions({ documentId, isArchived, hasVersion, sourceTy
       )}
 
       {showReupload && (
-        <div className="w-full mt-2 rounded-xl border border-dobro-cinza-escuro/10 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold mb-3">Reenviar nova versão</h3>
+        <div className="w-full mt-2 rounded-xl border border-[#333] bg-[#1a1a1a] p-4 shadow-sm">
+          <h3 className="text-sm font-semibold mb-3 text-white">Reenviar nova versão</h3>
           <form onSubmit={handleReupload} className="space-y-3">
             {sourceType === 'pdf' && (
               <input
@@ -117,7 +117,7 @@ export function KbDocumentActions({ documentId, isArchived, hasVersion, sourceTy
                 accept="application/pdf"
                 required
                 onChange={(e) => setReuploadFile(e.target.files?.[0] ?? null)}
-                className="block w-full text-sm text-dobro-cinza-escuro file:mr-4 file:rounded-md file:border-0 file:bg-dobro-azul/10 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-dobro-azul"
+                className="block w-full text-sm text-white/80 file:mr-4 file:rounded-md file:border-0 file:bg-[#6528d3]/15 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[#a78bfa]"
               />
             )}
             {sourceType === 'markdown' && (
@@ -127,39 +127,39 @@ export function KbDocumentActions({ documentId, isArchived, hasVersion, sourceTy
                 value={reuploadContent}
                 onChange={(e) => setReuploadContent(e.target.value)}
                 placeholder="Conteúdo Markdown..."
-                className="w-full rounded-md border border-dobro-cinza-escuro/15 px-3 py-2 font-mono text-xs focus:border-dobro-azul focus:outline-none focus:ring-2 focus:ring-dobro-azul/20"
+                className="w-full rounded-md border border-[#333] bg-[#1a1a1a] px-3 py-2 font-mono text-xs text-white placeholder:text-white/40 focus:border-[#6528d3] focus:outline-none focus:ring-2 focus:ring-[#6528d3]/20"
               />
             )}
             {sourceType === 'faq' && (
               <div className="space-y-2">
                 {faqPairs.map((p, i) => (
-                  <div key={i} className="space-y-1.5 rounded-lg border border-dobro-cinza-escuro/10 p-3">
+                  <div key={i} className="space-y-1.5 rounded-lg border border-[#333] p-3">
                     <input
                       type="text"
                       value={p.question}
                       onChange={(e) => setFaqPairs((prev) => prev.map((x, idx) => idx === i ? { ...x, question: e.target.value } : x))}
                       placeholder="Pergunta"
-                      className="w-full rounded border border-dobro-cinza-escuro/15 px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-dobro-azul"
+                      className="w-full rounded border border-[#333] bg-[#1a1a1a] px-2.5 py-1.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-[#6528d3]"
                     />
                     <textarea
                       value={p.answer}
                       onChange={(e) => setFaqPairs((prev) => prev.map((x, idx) => idx === i ? { ...x, answer: e.target.value } : x))}
                       placeholder="Resposta"
                       rows={2}
-                      className="w-full rounded border border-dobro-cinza-escuro/15 px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-dobro-azul"
+                      className="w-full rounded border border-[#333] bg-[#1a1a1a] px-2.5 py-1.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-[#6528d3]"
                     />
                   </div>
                 ))}
-                <button type="button" onClick={() => setFaqPairs((p) => [...p, { question: '', answer: '' }])} className="text-xs text-dobro-azul hover:underline">
+                <button type="button" onClick={() => setFaqPairs((p) => [...p, { question: '', answer: '' }])} className="text-xs text-[#6528d3] hover:underline">
                   + Par
                 </button>
               </div>
             )}
             <div className="flex gap-2">
-              <button type="button" onClick={() => setShowReupload(false)} className="flex-1 rounded-lg border border-dobro-cinza-escuro/15 py-2 text-xs font-semibold">
+              <button type="button" onClick={() => setShowReupload(false)} className="flex-1 rounded-lg border border-[#333] py-2 text-xs font-semibold text-white/80 hover:bg-white/5 transition-colors">
                 Cancelar
               </button>
-              <button type="submit" disabled={loading === 'reupload'} className="flex-1 rounded-lg bg-dobro-azul py-2 text-xs font-bold text-white disabled:opacity-50">
+              <button type="submit" disabled={loading === 'reupload'} className="flex-1 rounded-lg bg-[#6528d3] py-2 text-xs font-bold text-white hover:bg-[#5020b0] disabled:opacity-50 transition-colors">
                 {loading === 'reupload' ? 'Processando...' : 'Confirmar reenvio'}
               </button>
             </div>

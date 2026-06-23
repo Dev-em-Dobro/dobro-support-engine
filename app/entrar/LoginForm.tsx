@@ -40,7 +40,7 @@ export function LoginForm() {
 
   if (state.kind === 'sent') {
     return (
-      <div className="rounded border border-green-200 bg-green-50 px-4 py-4 text-sm text-green-800">
+      <div className="rounded-md border border-[#22c55e]/40 bg-[#22c55e]/10 px-4 py-4 text-sm text-[#6ee7b7]">
         <p className="font-semibold">Link enviado!</p>
         <p className="mt-1">
           {state.devLink ? 'Modo dev: use o link abaixo pra entrar direto.' : 'Confere seu email — pode ir pro spam.'}
@@ -48,7 +48,7 @@ export function LoginForm() {
         {state.devLink && (
           <a
             href={state.devLink}
-            className="mt-3 inline-block break-all rounded bg-dobro-laranja px-3 py-2 font-medium text-white hover:bg-dobro-laranja/90"
+            className="mt-3 inline-block break-all rounded-md bg-[#6528d3] px-3 py-2 font-medium text-white transition-colors hover:bg-[#5020b0]"
           >
             {state.devLink}
           </a>
@@ -60,23 +60,23 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium">Email</span>
+        <span className="font-medium text-white">Email</span>
         <input
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="voce@exemplo.com"
-          className="rounded border border-dobro-cinza-escuro/20 px-3 py-2 focus:border-dobro-azul focus:outline-none focus:ring-1 focus:ring-dobro-azul"
+          className="rounded-md border border-[#333] bg-[#1a1a1a] px-3 py-2 text-white placeholder:text-white/40 focus:border-[#6528d3] focus:outline-none focus:ring-1 focus:ring-[#6528d3]"
         />
       </label>
       {state.kind === 'error' && (
-        <p className="text-sm text-red-700">{state.msg}</p>
+        <p className="text-sm text-[#fca5a5]">{state.msg}</p>
       )}
       <button
         type="submit"
         disabled={state.kind === 'loading'}
-        className="rounded bg-dobro-azul px-4 py-2 font-medium text-white hover:bg-dobro-azul/90 disabled:opacity-50"
+        className="ds-btn ds-btn-primary"
       >
         {state.kind === 'loading' ? 'Enviando...' : 'Receber link'}
       </button>

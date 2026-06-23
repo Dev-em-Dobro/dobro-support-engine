@@ -35,11 +35,11 @@ export default async function GestorVendasPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <header className="mb-8">
-        <p className="font-titulo text-xs font-bold uppercase tracking-widest text-dobro-azul mb-1">
+        <p className="font-titulo text-xs font-bold uppercase tracking-widest text-[#a78bfa] mb-1">
           Gestor de Vendas
         </p>
-        <h1 className="font-titulo text-3xl font-bold">Painel</h1>
-        <p className="mt-2 text-sm text-dobro-cinza-escuro/70">
+        <h1 className="ds-subtitle text-[28px]">Painel</h1>
+        <p className="mt-2 text-sm text-white/70">
           Logado como <span className="font-mono">{session.email}</span>
         </p>
       </header>
@@ -49,12 +49,12 @@ export default async function GestorVendasPage() {
           <Link
             key={c.href}
             href={c.href}
-            className="group block rounded-xl border border-dobro-cinza-escuro/10 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
+            className="ds-card group block p-5"
           >
-            <h2 className="font-titulo text-lg font-bold text-dobro-azul group-hover:underline">
+            <h2 className="font-titulo text-lg font-bold text-[#a78bfa] group-hover:underline">
               {c.title}
             </h2>
-            <p className="mt-2 text-sm text-dobro-cinza-escuro/70">{c.desc}</p>
+            <p className="mt-2 text-sm text-white/70">{c.desc}</p>
           </Link>
         ))}
       </div>

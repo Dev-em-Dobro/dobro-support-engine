@@ -42,25 +42,25 @@ export default async function ContextoPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <div className="flex items-center justify-between gap-3">
-        <Link href="/gestor-vendas" className="text-sm text-dobro-azul hover:underline">
+        <Link href="/gestor-vendas" className="text-sm text-[#6528d3] hover:underline">
           ← Voltar ao painel
         </Link>
         <div className="flex gap-4">
-          <Link href="/gestor-vendas/contexto/avaliacao" className="text-sm text-dobro-azul hover:underline">
+          <Link href="/gestor-vendas/contexto/avaliacao" className="text-sm text-[#6528d3] hover:underline">
             Avaliação →
           </Link>
-          <Link href="/gestor-vendas/contexto/historico" className="text-sm text-dobro-azul hover:underline">
+          <Link href="/gestor-vendas/contexto/historico" className="text-sm text-[#6528d3] hover:underline">
             Histórico de versões →
           </Link>
         </div>
       </div>
-      <h1 className="mt-2 font-titulo text-2xl font-bold">Contexto do Chat</h1>
-      <p className="mt-2 text-sm text-dobro-cinza-escuro/70">
+      <h1 className="ds-subtitle mt-2">Contexto do Chat</h1>
+      <p className="mt-2 text-sm text-white/70">
         Texto que o agente recebe em <strong>toda</strong> conversa, junto com as regras inegociáveis
         e os trechos da base de conhecimento. Use pra dar foco (ex: &quot;estamos no lançamento da
         DevQuest 6.0&quot;), tom desejado, política comercial não cadastrada como documento, etc.
       </p>
-      <p className="mt-1 text-xs text-dobro-cinza-escuro/50">
+      <p className="mt-1 text-xs text-white/50">
         Limite: 4.000 caracteres. O agente continua proibido de inventar fora dos trechos da KB.
         {requiresApproval && ' Mudanças exigem aprovação de um segundo gestor antes de entrar no ar.'}
       </p>
@@ -77,7 +77,7 @@ export default async function ContextoPage() {
         </div>
       )}
 
-      <div className="mt-6 rounded-xl border border-dobro-cinza-escuro/10 bg-white p-6 shadow-sm">
+      <div className="ds-card mt-6 p-6">
         <ContextoForm
           initialValue={initial.value ?? ''}
           updatedAt={initial.updatedAt ? new Date(initial.updatedAt).toISOString() : null}

@@ -50,22 +50,22 @@ export function ComoFuncionaForm({ initialValue, updatedAt, updatedByEmail }: Pr
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wide text-dobro-cinza-escuro/60">
+        <span className="text-xs font-semibold uppercase tracking-wide text-white/60">
           {showPreview ? 'Preview' : 'Editor'}
         </span>
         <button
           type="button"
           onClick={() => setShowPreview((s) => !s)}
-          className="text-sm text-dobro-azul hover:underline"
+          className="text-sm text-[#6528d3] hover:underline"
         >
           {showPreview ? 'Editar' : 'Ver preview'}
         </button>
       </div>
 
       {showPreview ? (
-        <div className="min-h-[14rem] whitespace-pre-wrap rounded-md border border-dobro-cinza-escuro/10 bg-gray-50 px-4 py-3 text-sm text-dobro-cinza-escuro">
+        <div className="min-h-[14rem] whitespace-pre-wrap rounded-md border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-white/90">
           {value || (
-            <span className="text-dobro-cinza-escuro/40">Nada escrito ainda.</span>
+            <span className="text-white/40">Nada escrito ainda.</span>
           )}
         </div>
       ) : (
@@ -74,16 +74,16 @@ export function ComoFuncionaForm({ initialValue, updatedAt, updatedByEmail }: Pr
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder={`Ex:\n\n# Como funciona o Chat de Vendas\n\nO agente responde dúvidas com base apenas nos documentos que o gestor cadastrou. Se ele não souber, vai responder que não encontrou — não invente.\n\n## Dicas\n- Comece nova conversa pra cada cliente diferente\n- Use perguntas específicas\n- Se a resposta parecer errada, reporta no Slack #vendas`}
-          className="w-full resize-y rounded-md border border-dobro-cinza-escuro/15 bg-white px-3.5 py-2.5 text-sm text-dobro-cinza-escuro focus:border-dobro-azul focus:outline-none focus:ring-2 focus:ring-dobro-azul/20 transition-colors font-mono"
+          className="w-full resize-y rounded-md border border-[#333] bg-[#1a1a1a] px-3.5 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#6528d3] focus:outline-none focus:ring-2 focus:ring-[#6528d3]/20 transition-colors font-mono"
         />
       )}
 
       <div className="flex items-center justify-between text-xs">
-        <span className={over ? 'text-red-600' : 'text-dobro-cinza-escuro/50'}>
+        <span className={over ? 'text-[#fca5a5]' : 'text-white/50'}>
           {value.length} / {MAX_LEN}
         </span>
         {lastSavedAt && (
-          <span className="text-dobro-cinza-escuro/50">
+          <span className="text-white/50">
             Última edição: {new Date(lastSavedAt).toLocaleString('pt-BR')}
             {lastSavedBy ? ` por ${lastSavedBy}` : ''}
           </span>
@@ -92,10 +92,10 @@ export function ComoFuncionaForm({ initialValue, updatedAt, updatedByEmail }: Pr
 
       {status && (
         <div
-          className={`rounded-md px-4 py-3 text-sm ${
+          className={`rounded-md border px-4 py-3 text-sm ${
             status.type === 'error'
-              ? 'bg-red-50 text-red-700 ring-1 ring-red-200'
-              : 'bg-green-50 text-green-700 ring-1 ring-green-200'
+              ? 'border-[#ef4444]/40 bg-[#ef4444]/10 text-[#fca5a5]'
+              : 'border-[#22c55e]/40 bg-[#22c55e]/10 text-[#6ee7b7]'
           }`}
         >
           {status.msg}
@@ -106,7 +106,7 @@ export function ComoFuncionaForm({ initialValue, updatedAt, updatedByEmail }: Pr
         <button
           type="submit"
           disabled={saving || over}
-          className="rounded-lg bg-dobro-azul px-5 py-2.5 text-sm font-bold text-white hover:bg-dobro-azul/90 disabled:opacity-50 transition-colors"
+          className="ds-btn ds-btn-primary px-5 py-2.5 text-sm"
         >
           {saving ? 'Salvando...' : 'Salvar'}
         </button>

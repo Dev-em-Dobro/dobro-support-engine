@@ -72,7 +72,7 @@ export function EvalPanel({ hasBaseline, runs }: Props) {
           type="button"
           onClick={() => run(false)}
           disabled={loading !== null || !hasBaseline}
-          className="rounded-lg bg-dobro-azul px-5 py-2.5 text-sm font-bold text-white hover:bg-dobro-azul/90 disabled:opacity-50 transition-colors"
+          className="ds-btn ds-btn-primary px-5 py-2.5 text-sm"
         >
           {loading === 'run' ? 'Rodando...' : 'Rodar avaliação'}
         </button>
@@ -80,36 +80,36 @@ export function EvalPanel({ hasBaseline, runs }: Props) {
           type="button"
           onClick={() => run(true)}
           disabled={loading !== null}
-          className="rounded-lg border border-dobro-cinza-escuro/20 px-5 py-2.5 text-sm font-bold text-dobro-cinza-escuro hover:bg-dobro-cinza-claro/40 disabled:opacity-50 transition-colors"
+          className="rounded-lg border border-[#333] px-5 py-2.5 text-sm font-bold text-white/80 hover:bg-white/5 disabled:opacity-50 transition-colors"
         >
           {loading === 'baseline' ? 'Gravando...' : hasBaseline ? 'Regravar baseline' : 'Definir baseline'}
         </button>
         {!hasBaseline && (
-          <span className="text-xs text-dobro-cinza-escuro/60">
+          <span className="text-xs text-white/60">
             Defina o baseline primeiro pra habilitar a avaliação.
           </span>
         )}
       </div>
 
-      <p className="text-xs text-dobro-cinza-escuro/50">
+      <p className="text-xs text-white/50">
         A avaliação faz várias chamadas à OpenAI e pode levar até ~1 minuto.
       </p>
 
       {status && (
         <div
-          className={`rounded-md px-4 py-3 text-sm ${
+          className={`rounded-md border px-4 py-3 text-sm ${
             status.type === 'error'
-              ? 'bg-red-50 text-red-700 ring-1 ring-red-200'
-              : 'bg-green-50 text-green-700 ring-1 ring-green-200'
+              ? 'border-[#ef4444]/40 bg-[#ef4444]/10 text-[#fca5a5]'
+              : 'border-[#22c55e]/40 bg-[#22c55e]/10 text-[#6ee7b7]'
           }`}
         >
           {status.msg}
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-dobro-cinza-escuro/10 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-[#333] bg-[#0d0d0d] shadow-sm">
         <table className="w-full text-sm">
-          <thead className="bg-dobro-cinza-claro/40 text-left text-xs uppercase tracking-wider text-dobro-cinza-escuro/60">
+          <thead className="bg-[#1a1a1a] text-left text-xs uppercase tracking-wider text-white/60">
             <tr>
               <th className="px-4 py-2 font-semibold">Quando</th>
               <th className="px-4 py-2 font-semibold">Gatilho</th>
@@ -121,30 +121,30 @@ export function EvalPanel({ hasBaseline, runs }: Props) {
           <tbody>
             {runs.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-dobro-cinza-escuro/50">
+                <td colSpan={5} className="px-4 py-6 text-center text-white/50">
                   Nenhuma execução ainda.
                 </td>
               </tr>
             ) : (
               runs.map((r) => (
-                <tr key={r.id} className="border-t border-dobro-cinza-escuro/5">
-                  <td className="px-4 py-2 text-dobro-cinza-escuro/70">
+                <tr key={r.id} className="border-t border-white/5">
+                  <td className="px-4 py-2 text-white/70">
                     {new Date(r.createdAt).toLocaleString('pt-BR')}
                   </td>
-                  <td className="px-4 py-2 text-dobro-cinza-escuro/70">{r.trigger}</td>
-                  <td className="px-4 py-2 font-mono">{pct(r.avgDivergence)}</td>
-                  <td className="px-4 py-2 font-mono">{pct(r.maxDivergence)}</td>
+                  <td className="px-4 py-2 text-white/70">{r.trigger}</td>
+                  <td className="px-4 py-2 font-mono text-white/80">{pct(r.avgDivergence)}</td>
+                  <td className="px-4 py-2 font-mono text-white/80">{pct(r.maxDivergence)}</td>
                   <td className="px-4 py-2">
                     {r.isBaseline ? (
-                      <span className="rounded-full bg-dobro-azul/10 px-2 py-0.5 text-xs font-medium text-dobro-azul">
+                      <span className="rounded-full bg-[#6528d3]/15 px-2 py-0.5 text-xs font-medium text-[#a78bfa]">
                         baseline
                       </span>
                     ) : r.flagged ? (
-                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                      <span className="rounded-full bg-[#ef4444]/15 px-2 py-0.5 text-xs font-medium text-[#fca5a5]">
                         alerta
                       </span>
                     ) : (
-                      <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                      <span className="rounded-full bg-[#22c55e]/15 px-2 py-0.5 text-xs font-medium text-[#6ee7b7]">
                         ok
                       </span>
                     )}
