@@ -22,18 +22,18 @@ export default async function VendasComoFuncionaPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <Link href="/vendas" className="text-sm text-dobro-azul hover:underline">
+      <Link href="/vendas" className="text-sm text-[#6528d3] hover:underline">
         ← Voltar ao chat
       </Link>
-      <h1 className="mt-2 font-titulo text-2xl font-bold">Como o Chat funciona</h1>
+      <h1 className="ds-subtitle mt-2">Como o Chat funciona</h1>
 
-      <div className="mt-6 rounded-xl border border-dobro-cinza-escuro/10 bg-white p-6 shadow-sm">
+      <div className="ds-card mt-6 p-6">
         {setting.value.trim() ? (
-          <article className="prose prose-sm max-w-none whitespace-pre-wrap text-dobro-cinza-escuro">
+          <article className="prose prose-sm prose-invert max-w-none whitespace-pre-wrap text-white/90">
             {setting.value}
           </article>
         ) : (
-          <p className="text-sm text-dobro-cinza-escuro/50">
+          <p className="text-sm text-white/50">
             O gestor de vendas ainda não escreveu esta página. Procure o time interno se tiver dúvida
             sobre como usar o chat.
           </p>
@@ -41,7 +41,7 @@ export default async function VendasComoFuncionaPage() {
       </div>
 
       {setting.updatedAt && (
-        <p className="mt-3 text-xs text-dobro-cinza-escuro/50">
+        <p className="mt-3 text-xs text-white/50">
           Atualizado em {new Date(setting.updatedAt).toLocaleString('pt-BR')}
         </p>
       )}

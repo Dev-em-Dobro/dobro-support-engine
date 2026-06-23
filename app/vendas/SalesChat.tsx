@@ -38,18 +38,18 @@ function CitationChip({ source }: { source: Source }) {
     <span className="relative inline-block">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-dobro-azul/15 text-[10px] font-bold text-dobro-azul hover:bg-dobro-azul/30 transition-colors"
+        className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#6528d3]/20 text-[10px] font-bold text-[#a78bfa] hover:bg-[#6528d3]/40 transition-colors"
         aria-label={`Fonte ${source.citation}: ${source.title}`}
       >
         {source.citation}
       </button>
       {open && (
-        <div className="absolute bottom-6 left-0 z-10 w-64 rounded-lg border border-dobro-cinza-escuro/15 bg-white p-3 shadow-lg text-sm">
-          <p className="font-semibold text-dobro-azul mb-1">{source.title}</p>
-          <p className="text-xs text-dobro-cinza-escuro/60">score: {source.score.toFixed(3)}</p>
+        <div className="absolute bottom-6 left-0 z-10 w-64 rounded-lg border border-[#333] bg-[#1a1a1a] p-3 shadow-lg text-sm">
+          <p className="font-semibold text-[#a78bfa] mb-1">{source.title}</p>
+          <p className="text-xs text-white/60">score: {source.score.toFixed(3)}</p>
           <button
             onClick={() => setOpen(false)}
-            className="absolute top-1.5 right-2 text-dobro-cinza-escuro/40 hover:text-dobro-cinza-escuro"
+            className="absolute top-1.5 right-2 text-white/40 hover:text-white"
           >
             ×
           </button>
@@ -78,6 +78,16 @@ function renderWithCitations(content: string, sources?: Source[]) {
   );
 }
 
+function TypingDots() {
+  return (
+    <span className="flex items-center gap-1 py-1" aria-label="Digitando" role="status">
+      <span className="ds-typing-dot" style={{ animationDelay: '0ms' }} />
+      <span className="ds-typing-dot" style={{ animationDelay: '200ms' }} />
+      <span className="ds-typing-dot" style={{ animationDelay: '400ms' }} />
+    </span>
+  );
+}
+
 function ObjectionToggle({
   active,
   onChange,
@@ -97,18 +107,18 @@ function ObjectionToggle({
       onClick={() => onChange(!active)}
       className={`group inline-flex items-center gap-2 rounded-full border px-2.5 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
         active
-          ? 'border-dobro-laranja/30 bg-dobro-laranja/10 text-dobro-laranja'
-          : 'border-dobro-cinza-escuro/15 bg-white text-dobro-cinza-escuro/60 hover:bg-gray-50'
+          ? 'border-[#ff6b35]/30 bg-[#ff6b35]/10 text-[#ff6b35]'
+          : 'border-[#333] bg-[#1a1a1a] text-white/60 hover:bg-white/5'
       }`}
     >
       <span
-        className={`relative h-4 w-7 flex-shrink-0 rounded-full transition-colors ${
-          active ? 'bg-dobro-laranja' : 'bg-dobro-cinza-escuro/20'
+        className={`inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full px-0.5 transition-colors ${
+          active ? 'bg-[#ff6b35]' : 'bg-white/20'
         }`}
       >
         <span
-          className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow-sm transition-transform ${
-            active ? 'translate-x-3.5' : 'translate-x-0.5'
+          className={`h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+            active ? 'translate-x-4' : 'translate-x-0'
           }`}
         />
       </span>
@@ -134,19 +144,19 @@ function ObjectionOptionCard({ text, index }: { text: string; index: number }) {
   }
 
   return (
-    <div className="group relative rounded-xl border border-dobro-laranja/15 bg-white p-3 pr-10 shadow-sm transition-colors hover:border-dobro-laranja/40">
-      <span className="absolute -left-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-dobro-laranja text-[10px] font-bold text-white">
+    <div className="group relative rounded-xl border border-[#ff6b35]/20 bg-[#1a1a1a] p-3 pr-10 shadow-sm transition-colors hover:border-[#ff6b35]/50">
+      <span className="absolute -left-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#ff6b35] text-[10px] font-bold text-white">
         {index + 1}
       </span>
-      <p className="whitespace-pre-wrap text-sm leading-relaxed text-dobro-cinza-escuro">{text}</p>
+      <p className="whitespace-pre-wrap text-sm leading-relaxed text-white">{text}</p>
       <button
         type="button"
         onClick={copy}
         aria-label="Copiar mensagem"
-        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg text-dobro-cinza-escuro/40 transition-colors hover:bg-dobro-laranja/10 hover:text-dobro-laranja"
+        className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-[#ff6b35]/10 hover:text-[#ff6b35]"
       >
         {copied ? (
-          <svg className="h-4 w-4 text-dobro-amarelo" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <svg className="h-4 w-4 text-[#22c55e]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         ) : (
@@ -324,15 +334,15 @@ export function SalesChat({ userEmail }: Props) {
   }
 
   return (
-    <div className="flex h-[calc(100vh-14rem)] min-h-[480px] overflow-hidden rounded-xl border border-dobro-cinza-escuro/10 bg-gray-50">
-      <aside className="flex w-64 flex-shrink-0 flex-col border-r border-dobro-cinza-escuro/10 bg-white">
-        <div className="p-4 border-b border-dobro-cinza-escuro/10">
-          <p className="font-titulo text-xs font-bold uppercase tracking-widest text-dobro-azul mb-3">
+    <div className="flex h-[calc(100vh-14rem)] min-h-[480px] overflow-hidden rounded-xl border border-[#333] bg-[#0d0d0d]">
+      <aside className="flex w-64 flex-shrink-0 flex-col border-r border-[#333] bg-[#111111]">
+        <div className="p-4 border-b border-[#333]">
+          <p className="font-titulo text-xs font-bold uppercase tracking-widest text-[#a78bfa] mb-3">
             Agente de Vendas
           </p>
           <button
             onClick={startNewConversation}
-            className="w-full rounded-md bg-dobro-azul px-3 py-2 text-sm font-semibold text-white hover:bg-dobro-azul/90 transition-colors"
+            className="w-full rounded-md bg-[#6528d3] px-3 py-2 text-sm font-semibold text-white hover:bg-[#5020b0] transition-colors"
           >
             + Nova conversa
           </button>
@@ -340,7 +350,7 @@ export function SalesChat({ userEmail }: Props) {
 
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 && (
-            <p className="px-4 py-6 text-center text-xs text-dobro-cinza-escuro/40">
+            <p className="px-4 py-6 text-center text-xs text-white/40">
               Nenhuma conversa ainda
             </p>
           )}
@@ -348,16 +358,16 @@ export function SalesChat({ userEmail }: Props) {
             <div
               key={conv.id}
               onClick={() => selectConversation(conv.id)}
-              className={`group flex cursor-pointer items-center gap-2 px-3 py-2.5 border-b border-dobro-cinza-escuro/5 hover:bg-gray-50 transition-colors ${
-                activeConvId === conv.id ? 'bg-dobro-azul/5 border-l-2 border-l-dobro-azul' : ''
+              className={`group flex cursor-pointer items-center gap-2 px-3 py-2.5 border-b border-white/5 hover:bg-white/5 transition-colors ${
+                activeConvId === conv.id ? 'bg-[#6528d3]/10 border-l-2 border-l-[#6528d3]' : ''
               }`}
             >
-              <span className="flex-1 truncate text-sm text-dobro-cinza-escuro">
+              <span className="flex-1 truncate text-sm text-white">
                 {conv.title ?? 'Nova conversa'}
               </span>
               <button
                 onClick={(e) => deleteConversation(conv.id, e)}
-                className="hidden group-hover:flex h-5 w-5 items-center justify-center rounded text-dobro-cinza-escuro/40 hover:text-red-500 hover:bg-red-50"
+                className="hidden group-hover:flex h-5 w-5 items-center justify-center rounded text-white/40 hover:text-[#ef4444] hover:bg-[#ef4444]/10"
                 aria-label="Deletar conversa"
               >
                 ×
@@ -366,17 +376,17 @@ export function SalesChat({ userEmail }: Props) {
           ))}
         </div>
 
-        <div className="border-t border-dobro-cinza-escuro/10 p-3">
-          <p className="truncate text-xs text-dobro-cinza-escuro/60 mb-2">{userEmail}</p>
+        <div className="border-t border-[#333] p-3">
+          <p className="truncate text-xs text-white/60 mb-2">{userEmail}</p>
           <Link
             href="/vendas/como-funciona"
-            className="mb-1.5 block w-full rounded-md border border-dobro-cinza-escuro/15 px-3 py-1.5 text-center text-xs text-dobro-cinza-escuro/70 hover:bg-gray-50 transition-colors"
+            className="mb-1.5 block w-full rounded-md border border-[#333] px-3 py-1.5 text-center text-xs text-white/70 hover:bg-white/5 transition-colors"
           >
             Como funciona
           </Link>
           <button
             onClick={logout}
-            className="w-full rounded-md border border-dobro-cinza-escuro/15 px-3 py-1.5 text-xs text-dobro-cinza-escuro/70 hover:bg-gray-50 transition-colors"
+            className="w-full rounded-md border border-[#333] px-3 py-1.5 text-xs text-white/70 hover:bg-white/5 transition-colors"
           >
             Sair
           </button>
@@ -385,14 +395,14 @@ export function SalesChat({ userEmail }: Props) {
 
       <main className="flex flex-1 flex-col overflow-hidden">
         {isObjectionMode && (
-          <div className="flex items-center gap-2 border-b border-dobro-laranja/15 bg-dobro-laranja/5 px-4 py-2">
-            <svg className="h-4 w-4 flex-shrink-0 text-dobro-laranja" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="flex items-center gap-2 border-b border-[#ff6b35]/20 bg-[#ff6b35]/10 px-4 py-2">
+            <svg className="h-4 w-4 flex-shrink-0 text-[#ff6b35]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <p className="text-xs font-semibold text-dobro-laranja">
+            <p className="text-xs font-semibold text-[#ff6b35]">
               Modo Quebra de Objeção ativo
             </p>
-            <span className="text-xs text-dobro-cinza-escuro/50">
+            <span className="text-xs text-white/50">
               · cole a fala do lead e receba 3 respostas prontas
             </span>
           </div>
@@ -403,25 +413,25 @@ export function SalesChat({ userEmail }: Props) {
             <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
               {isObjectionMode ? (
                 <>
-                  <div className="rounded-full bg-dobro-laranja/10 p-4">
-                    <svg className="h-8 w-8 text-dobro-laranja" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="rounded-full bg-[#ff6b35]/10 p-4">
+                    <svg className="h-8 w-8 text-[#ff6b35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                   </div>
-                  <p className="text-lg font-semibold text-dobro-cinza-escuro">Quebra de Objeção</p>
-                  <p className="max-w-sm text-sm text-dobro-cinza-escuro/60">
+                  <p className="text-lg font-semibold text-white">Quebra de Objeção</p>
+                  <p className="max-w-sm text-sm text-white/60">
                     Cole exatamente o que o lead falou (ex: <span className="italic">&quot;tá caro&quot;, &quot;não tenho tempo&quot;</span>) e receba 3 mensagens curtas prontas pra responder no WhatsApp.
                   </p>
                 </>
               ) : (
                 <>
-                  <div className="rounded-full bg-dobro-azul/10 p-4">
-                    <svg className="h-8 w-8 text-dobro-azul" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="rounded-full bg-[#6528d3]/10 p-4">
+                    <svg className="h-8 w-8 text-[#6528d3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
                   </div>
-                  <p className="text-lg font-semibold text-dobro-cinza-escuro">Como posso ajudar?</p>
-                  <p className="max-w-sm text-sm text-dobro-cinza-escuro/60">
+                  <p className="text-lg font-semibold text-white">Como posso ajudar?</p>
+                  <p className="max-w-sm text-sm text-white/60">
                     Pergunte sobre produtos, lançamentos, preços ou política comercial da Dev em Dobro.
                   </p>
                 </>
@@ -431,7 +441,7 @@ export function SalesChat({ userEmail }: Props) {
 
           {loadingHistory && (
             <div className="flex justify-center py-8">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-dobro-azul border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#6528d3] border-t-transparent" />
             </div>
           )}
 
@@ -441,7 +451,7 @@ export function SalesChat({ userEmail }: Props) {
                 return (
                   <div key={i} className="flex justify-start">
                     <div className="w-full max-w-[95%] space-y-2.5">
-                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-dobro-laranja">
+                      <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[#ff6b35]">
                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
@@ -465,8 +475,8 @@ export function SalesChat({ userEmail }: Props) {
                   <div
                     className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                       msg.role === 'user'
-                        ? 'bg-dobro-azul text-white'
-                        : 'bg-white text-dobro-cinza-escuro shadow-sm ring-1 ring-dobro-cinza-escuro/8'
+                        ? 'bg-[#6528d3] text-white'
+                        : 'bg-[#1a1a1a] text-white ring-1 ring-[#333]'
                     }`}
                   >
                     {msg.role === 'assistant' ? (
@@ -477,7 +487,7 @@ export function SalesChat({ userEmail }: Props) {
                       <p className="whitespace-pre-wrap">{msg.content}</p>
                     )}
                     {msg.role === 'assistant' && !msg.content && streaming && (
-                      <span className="inline-block h-4 w-1 animate-pulse bg-dobro-cinza-escuro/40" />
+                      <TypingDots />
                     )}
                   </div>
                 </div>
@@ -487,7 +497,7 @@ export function SalesChat({ userEmail }: Props) {
           <div ref={bottomRef} />
         </div>
 
-        <div className="border-t border-dobro-cinza-escuro/10 bg-white px-4 py-3">
+        <div className="border-t border-[#333] bg-[#111111] px-4 py-3">
           <div className="mx-auto max-w-2xl">
             <div className="mb-2 flex items-center justify-between">
               <ObjectionToggle
@@ -509,10 +519,10 @@ export function SalesChat({ userEmail }: Props) {
                   : 'Escreva sua pergunta... (Enter para enviar, Shift+Enter para nova linha)'
               }
               disabled={streaming}
-              className={`max-h-40 flex-1 resize-none overflow-y-auto rounded-xl border bg-white px-4 py-2.5 text-sm text-dobro-cinza-escuro placeholder:text-dobro-cinza-escuro/40 focus:outline-none focus:ring-2 disabled:opacity-50 transition-colors ${
+              className={`max-h-40 flex-1 resize-none overflow-y-auto rounded-xl border bg-[#1a1a1a] px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 disabled:opacity-50 transition-colors ${
                 isObjectionMode
-                  ? 'border-dobro-laranja/40 focus:border-dobro-laranja focus:ring-dobro-laranja/20'
-                  : 'border-dobro-cinza-escuro/15 focus:border-dobro-azul focus:ring-dobro-azul/20'
+                  ? 'border-[#ff6b35]/40 focus:border-[#ff6b35] focus:ring-[#ff6b35]/20'
+                  : 'border-[#333] focus:border-[#6528d3] focus:ring-[#6528d3]/20'
               }`}
             />
             <button
@@ -520,8 +530,8 @@ export function SalesChat({ userEmail }: Props) {
               disabled={streaming || !input.trim()}
               className={`rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-40 transition-colors ${
                 isObjectionMode
-                  ? 'bg-dobro-laranja hover:bg-dobro-laranja/90'
-                  : 'bg-dobro-azul hover:bg-dobro-azul/90'
+                  ? 'bg-[#ff6b35] hover:brightness-95'
+                  : 'bg-[#6528d3] hover:bg-[#5020b0]'
               }`}
               aria-label="Enviar mensagem"
             >
