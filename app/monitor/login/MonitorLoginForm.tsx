@@ -8,7 +8,14 @@ const inputCls =
 
 const labelTitleCls = 'font-titulo text-sm font-semibold text-white';
 
-export function MonitorLoginForm() {
+// `redirectTo` define pra onde mandar após o login completo. O monitor de
+// correções vai pro /monitor/dashboard (default); o gestor de vendas reusa
+// este mesmo form (mesma auth + 2FA) apontando pro /gestor-vendas.
+export function MonitorLoginForm({
+  redirectTo = '/monitor/dashboard',
+}: {
+  redirectTo?: string;
+} = {}) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,8 +25,8 @@ export function MonitorLoginForm() {
   const [step, setStep] = useState<'credentials' | 'code'>('credentials');
   const [code, setCode] = useState('');
 
-  function goToDashboard() {
-    router.push('/monitor/dashboard');
+  function goToDestination() {
+    router.push(redirectTo);
     router.refresh();
   }
 
@@ -45,7 +52,7 @@ export function MonitorLoginForm() {
         setLoading(false);
         return;
       }
-      goToDashboard();
+      goToDestination();
     } catch (e) {
       if (e instanceof DOMException && e.name === 'TimeoutError') {
         setErr('Login demorou demais para responder. Tenta novamente.');
@@ -73,7 +80,7 @@ export function MonitorLoginForm() {
         setLoading(false);
         return;
       }
-      goToDashboard();
+      goToDestination();
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Erro desconhecido');
       setLoading(false);
