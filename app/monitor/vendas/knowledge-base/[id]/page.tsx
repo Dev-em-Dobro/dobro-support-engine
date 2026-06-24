@@ -21,7 +21,7 @@ export default async function KbDocumentDetailPage({
   params: { id: string };
 }) {
   const session = await getSession();
-  if (!session || session.role !== 'monitor') redirect('/monitor/login');
+  if (!session || session.role !== 'monitor') redirect('/gestor-vendas/login');
 
   const doc = await asMonitor(session.email, async (tx) => {
     const rows = await tx
