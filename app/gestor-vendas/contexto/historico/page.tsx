@@ -10,7 +10,7 @@ export const metadata = { title: 'Histórico do Contexto · Gestor de Vendas' };
 
 export default async function HistoricoPage() {
   const session = await getSession();
-  if (!session || session.role !== 'monitor') redirect('/monitor/login');
+  if (!session || session.role !== 'monitor') redirect('/gestor-vendas/login');
 
   const [versions, currentRows] = await Promise.all([
     asMonitor(session.email, async (tx) =>

@@ -10,7 +10,7 @@ export const metadata = { title: 'Como o Chat funciona · Gestor de Vendas' };
 
 export default async function ComoFuncionaPage() {
   const session = await getSession();
-  if (!session || session.role !== 'monitor') redirect('/monitor/login');
+  if (!session || session.role !== 'monitor') redirect('/gestor-vendas/login');
 
   const rows = await asMonitor(session.email, async (tx) =>
     tx
