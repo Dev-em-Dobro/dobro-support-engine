@@ -11,7 +11,7 @@ export const metadata = { title: 'Avaliação do Agente · Gestor de Vendas' };
 
 export default async function AvaliacaoPage() {
   const session = await getSession();
-  if (!session || session.role !== 'monitor') redirect('/monitor/login');
+  if (!session || session.role !== 'monitor') redirect('/gestor-vendas/login');
 
   const [runs, baseline] = await Promise.all([
     asMonitor(session.email, async (tx) =>

@@ -12,7 +12,7 @@ export const metadata = { title: 'Contexto do Chat · Gestor de Vendas' };
 
 export default async function ContextoPage() {
   const session = await getSession();
-  if (!session || session.role !== 'monitor') redirect('/monitor/login');
+  if (!session || session.role !== 'monitor') redirect('/gestor-vendas/login');
 
   const requiresApproval = env.SALES_CONTEXT_REQUIRE_APPROVAL;
 

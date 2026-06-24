@@ -18,6 +18,54 @@ import { neon } from '@neondatabase/serverless';
 import { sql } from 'drizzle-orm';
 import * as schema from './schema';
 import { createHash } from 'node:crypto';
+import { hashPassword } from '../lib/password';
+
+// Credenciais de DEV pra exercitar login de vendedor e gestor localmente.
+// Tudo vem do .env.local (SEED_DEV_*) — nada hardcoded. Se as variáveis não
+// estiverem definidas, a criação é pulada. NUNCA roda em produção (guard
+// abaixo). Pra prod, use scripts/add-sales-user.ts e scripts/add-monitor.ts
+// com senha forte e única.
+async function seedDevUsers() {
+  if (process.env.NODE_ENV === 'production') {
+    console.log('⏭️  Pulando usuários de DEV (NODE_ENV=production).');
+    return;
+  }
+
+  const gestorEmail = process.env.SEED_DEV_GESTOR_EMAIL?.toLowerCase().trim();
+  const vendedorEmail = process.env.SEED_DEV_VENDEDOR_EMAIL?.toLowerCase().trim();
+  // SEED_DEV_PASSWORD é a senha base (compartilhada). Cada papel pode ter a sua
+  // própria via SEED_DEV_GESTOR_PASSWORD / SEED_DEV_VENDEDOR_PASSWORD.
+  const basePassword = process.env.SEED_DEV_PASSWORD;
+  const gestorPassword = process.env.SEED_DEV_GESTOR_PASSWORD ?? basePassword;
+  const vendedorPassword = process.env.SEED_DEV_VENDEDOR_PASSWORD ?? basePassword;
+
+  if (!gestorEmail || !vendedorEmail || !gestorPassword || !vendedorPassword) {
+    console.log(
+      '⏭️  Pulando usuários de DEV: defina SEED_DEV_GESTOR_EMAIL, ' +
+        'SEED_DEV_VENDEDOR_EMAIL e SEED_DEV_PASSWORD no .env.local.'
+    );
+    return;
+  }
+
+  // Gestor de vendas == role 'monitor' (mesma conta que controla o agente).
+  // Login dev em /gestor-vendas/login.
+  const gestorHash = await hashPassword(gestorPassword);
+  await db
+    .insert(schema.monitorUsers)
+    .values({ email: gestorEmail, passwordHash: gestorHash })
+    .onConflictDoUpdate({ target: schema.monitorUsers.email, set: { passwordHash: gestorHash } });
+
+  // Vendedor (role 'sales'). Login dev em /vendas/login.
+  const vendedorHash = await hashPassword(vendedorPassword);
+  await db
+    .insert(schema.salesUsers)
+    .values({ email: vendedorEmail, passwordHash: vendedorHash })
+    .onConflictDoUpdate({ target: schema.salesUsers.email, set: { passwordHash: vendedorHash } });
+
+  console.log('👤 Usuários DEV prontos:');
+  console.log(`   • Gestor   → ${gestorEmail}   (/gestor-vendas/login)`);
+  console.log(`   • Vendedor → ${vendedorEmail}  (/vendas/login)`);
+}
 
 function assertEnv(name: string): string {
   const v = process.env[name];
@@ -34,6 +82,8 @@ async function seed() {
   await client`SELECT set_config('app.user_role', 'service', true)`;
 
   console.log('🌱 Seeding dobro-support...');
+
+  await seedDevUsers();
 
   // ---------- Sample submissions (1 per status to exercise UI) ----------
   const aliceEmail = 'aluno.alice@devemdobro.dev';

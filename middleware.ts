@@ -20,6 +20,8 @@ const PUBLIC_PATHS = new Set([
   '/api/vendas/auth/login',
   '/monitor/login',
   '/api/monitor/login',
+  // Login dedicado do gestor de vendas (reusa a auth do monitor, com 2FA).
+  '/gestor-vendas/login',
 ]);
 
 /**
@@ -45,7 +47,9 @@ function requiredRoleFor(pathname: string): { role: Session['role']; loginPath: 
     matchesBase(pathname, '/monitor/vendas') ||
     matchesBase(pathname, '/api/monitor/vendas')
   ) {
-    return { role: 'monitor', loginPath: '/monitor/login' };
+    // Área do gestor de vendas: role 'monitor' (a conta que controla o agente),
+    // mas a tela de login é a branded do gestor — não a de correções.
+    return { role: 'monitor', loginPath: '/gestor-vendas/login' };
   }
   return null;
 }

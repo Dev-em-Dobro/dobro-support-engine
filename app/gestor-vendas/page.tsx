@@ -30,7 +30,7 @@ const cards: Card[] = [
 
 export default async function GestorVendasPage() {
   const session = await getSession();
-  if (!session || session.role !== 'monitor') redirect('/monitor/login');
+  if (!session || session.role !== 'monitor') redirect('/gestor-vendas/login');
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
