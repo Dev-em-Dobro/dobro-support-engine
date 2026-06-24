@@ -22,7 +22,7 @@ const typeLabel: Record<string, string> = {
 
 export default async function KnowledgeBasePage() {
   const session = await getSession();
-  if (!session || session.role !== 'monitor') redirect('/monitor/login');
+  if (!session || session.role !== 'monitor') redirect('/gestor-vendas/login');
 
   const docs = await asMonitor(session.email, async (tx) =>
     tx
