@@ -35,6 +35,8 @@ export const env = {
     return optional('NEON_ORG_ID');
   },
   get SCUDO_NEON_PROJECT_ID() {
+    // ID do projeto Neon da Scudo (nao confundir com NEON_PROJECT_ID do Support Engine).
+    // Evita varrer todos os projetos da org na API da Neon ao carregar o dashboard.
     return optional('SCUDO_NEON_PROJECT_ID');
   },
   get APP_URL() {
