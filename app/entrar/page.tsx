@@ -13,12 +13,12 @@ export default function EntrarPage({
 
   return (
     <div className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center py-12">
-      <h1 className="font-titulo text-3xl font-bold">Entrar no Dobro Support</h1>
-      <p className="mt-2 text-dobro-cinza-escuro/70">
+      <h1 className="ds-subtitle text-[28px]">Entrar no Dobro Support</h1>
+      <p className="ds-text-sm mt-2">
         A gente envia um link de acesso pro seu email cadastrado na DevQuest.
       </p>
       {erroMsg && (
-        <div className="mt-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="mt-4 rounded-md border border-[#ef4444]/40 bg-[#ef4444]/10 px-4 py-3 text-sm text-[#fca5a5]">
           {erroMsg}
         </div>
       )}

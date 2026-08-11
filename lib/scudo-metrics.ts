@@ -1,7 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 import { env } from '@/lib/env';
 
-const RANK_LABELS = [
+export const RANK_LABELS = [
     'Ferro',
     'Bronze',
     'Prata',
@@ -14,7 +14,33 @@ const RANK_LABELS = [
     'Lendário',
 ] as const;
 
-type RankLabel = (typeof RANK_LABELS)[number];
+export type RankLabel = (typeof RANK_LABELS)[number];
+
+export const RANK_SLUGS = [
+    'ferro',
+    'bronze',
+    'prata',
+    'ouro',
+    'platina',
+    'esmeralda',
+    'diamante',
+    'mythril',
+    'mestre',
+    'lendario',
+] as const;
+
+export type RankSlug = (typeof RANK_SLUGS)[number];
+
+export function rankSlugToOrder(slug: string): number | null {
+    const normalized = slug.trim().toLowerCase();
+    const idx = RANK_SLUGS.indexOf(normalized as RankSlug);
+    return idx >= 0 ? idx + 1 : null;
+}
+
+export function rankOrderToSlug(order: number): RankSlug {
+    const normalized = Math.min(Math.max(order, 1), RANK_SLUGS.length);
+    return RANK_SLUGS[normalized - 1];
+}
 
 const BILLING_HOURS_PER_MONTH = 744;
 const BYTES_PER_GB = 1_000_000_000;
@@ -118,6 +144,35 @@ export interface StudentDetails {
     rank: RankLabel;
     appliedJobsCount: number;
     lastAccessAt: string | null;
+}
+
+export interface ScudoRankStudent {
+    email: string;
+    name: string;
+    rank: RankLabel;
+    appliedJobsCount: number;
+    lastAccessAt: string | null;
+    isOfficial: boolean;
+}
+
+export interface ScudoRankStudentsResult {
+    rank: RankLabel;
+    rankOrder: number;
+    students: ScudoRankStudent[];
+    hasAppliedJobsTracking: boolean;
+}
+
+export type ScudoCoreDashboardMetrics = Omit<ScudoDashboardMetrics, 'finance'>;
+
+export interface ScudoFinanceDashboard {
+    neon: ScudoNeonFinanceMetrics;
+    openAi: {
+        hasData: boolean;
+        estimatedCostUsd30d: number;
+        note: string;
+    };
+    totalEstimatedCostUsd30d: number;
+    warnings: string[];
 }
 
 export interface ScudoDashboardMetrics {
@@ -572,7 +627,7 @@ function calculateNeonFinance(
     };
 }
 
-async function getScudoNeonFinanceMetrics(warnings: string[]): Promise<ScudoNeonFinanceMetrics> {
+export async function getScudoNeonFinanceMetrics(warnings: string[]): Promise<ScudoNeonFinanceMetrics> {
     const neonApiKey = env.NEON_NAPI_KEY;
     if (!neonApiKey) {
         warnings.push('NEON_NAPI_KEY nao configurada; custo Neon da Scudo nao disponivel.');
@@ -703,64 +758,272 @@ async function getStudentDetails(
     };
 }
 
-export async function getScudoDashboardMetrics(studentEmail?: string): Promise<ScudoDashboardMetrics> {
-    const scudoSql = getScudoSql();
+export async function getScudoFinanceDashboard(): Promise<ScudoFinanceDashboard> {
     const warnings: string[] = [];
-
     const neonFinance = await getScudoNeonFinanceMetrics(warnings);
     const openAiFinance = {
         hasData: false,
         estimatedCostUsd30d: 0,
         note: 'Telemetria de tokens/custos da OpenAI na Scudo ainda nao foi instrumentada.',
     };
-    const totalEstimatedCostUsd30d = neonFinance.estimatedCostUsd30d + openAiFinance.estimatedCostUsd30d;
 
-    const studentsRows = (await scudoSql`
-    select
-      count(*)::int as total,
-      count(*) filter (where "officialStudentVerifiedAt" is not null)::int as official
-    from "User";
-  `) as Array<{ total: unknown; official: unknown }>;
+    return {
+        neon: neonFinance,
+        openAi: openAiFinance,
+        totalEstimatedCostUsd30d: neonFinance.estimatedCostUsd30d + openAiFinance.estimatedCostUsd30d,
+        warnings,
+    };
+}
 
-    const activeRows = (await scudoSql`
-    select
-      count(distinct "userId") filter (where "updatedAt" >= now() - interval '24 hours')::int as active_24h,
-      count(distinct "userId") filter (where "updatedAt" >= now() - interval '48 hours')::int as active_48h,
-      count(distinct "userId") filter (where "updatedAt" >= now() - interval '72 hours')::int as active_72h
-    from "Session";
-  `) as Array<{ active_24h: unknown; active_48h: unknown; active_72h: unknown }>;
+async function hasAppliedJobsTable(scudoSql: ReturnType<typeof neon>): Promise<boolean> {
+    const jobApplicationTableRows = (await scudoSql`
+      select to_regclass('public."JobApplication"') is not null as enabled;
+    `) as Array<{ enabled: unknown }>;
 
-    const rankRows = (await scudoSql`
-    with user_rank as (
-      select
-        u.id as user_id,
-        coalesce(
-          max(
-            case
-              when lower(p."taskId") like 'ferro-%' then 1
-              when lower(p."taskId") like 'bronze-%' then 2
-              when lower(p."taskId") like 'prata-%' then 3
-              when lower(p."taskId") like 'ouro-%' then 4
-              when lower(p."taskId") like 'platina-%' then 5
-              when lower(p."taskId") like 'esmeralda-%' then 6
-              when lower(p."taskId") like 'diamante-%' then 7
-              when lower(p."taskId") like 'mythril-%' then 8
-              when lower(p."taskId") like 'mestre-%' then 9
-              when lower(p."taskId") like 'lendario-%' then 10
-              else null
-            end
-          ),
-          1
-        ) as rank_order
-      from "User" u
-      left join "UserJornadaTaskProgress" p on p."userId" = u.id
-      group by u.id
-    )
-    select rank_order, count(*)::int as total
-    from user_rank
-    group by rank_order
-    order by rank_order;
-  `) as Array<{ rank_order: unknown; total: unknown }>;
+    return Boolean(jobApplicationTableRows[0]?.enabled);
+}
+
+export async function getScudoStudentsByRank(rankOrder: number): Promise<ScudoRankStudentsResult> {
+    const scudoSql = getScudoSql();
+    const normalizedOrder = Math.min(Math.max(rankOrder, 1), RANK_LABELS.length);
+    const hasAppliedJobsTracking = await hasAppliedJobsTable(scudoSql);
+
+    const studentRows = hasAppliedJobsTracking
+        ? ((await scudoSql`
+            with user_rank as (
+              select
+                u.id as user_id,
+                u.name,
+                u.email,
+                u."officialStudentVerifiedAt" is not null as is_official,
+                coalesce(
+                  max(
+                    case
+                      when lower(p."taskId") like 'ferro-%' then 1
+                      when lower(p."taskId") like 'bronze-%' then 2
+                      when lower(p."taskId") like 'prata-%' then 3
+                      when lower(p."taskId") like 'ouro-%' then 4
+                      when lower(p."taskId") like 'platina-%' then 5
+                      when lower(p."taskId") like 'esmeralda-%' then 6
+                      when lower(p."taskId") like 'diamante-%' then 7
+                      when lower(p."taskId") like 'mythril-%' then 8
+                      when lower(p."taskId") like 'mestre-%' then 9
+                      when lower(p."taskId") like 'lendario-%' then 10
+                      else null
+                    end
+                  ),
+                  1
+                )::int as rank_order
+              from "User" u
+              left join "UserJornadaTaskProgress" p on p."userId" = u.id
+              group by u.id, u.name, u.email, u."officialStudentVerifiedAt"
+            ),
+            last_access as (
+              select "userId", max("updatedAt") as last_access_at
+              from "Session"
+              group by "userId"
+            ),
+            applied_jobs as (
+              select "userId", count(*)::int as applied_count
+              from "JobApplication"
+              group by "userId"
+            )
+            select
+              ur.email,
+              ur.name,
+              ur.is_official,
+              la.last_access_at,
+              coalesce(aj.applied_count, 0)::int as applied_jobs_count
+            from user_rank ur
+            left join last_access la on la."userId" = ur.user_id
+            left join applied_jobs aj on aj."userId" = ur.user_id
+            where ur.rank_order = ${normalizedOrder}
+            order by ur.name asc nulls last, ur.email asc;
+          `) as Array<{
+              email: unknown;
+              name: unknown;
+              is_official: unknown;
+              last_access_at: unknown;
+              applied_jobs_count: unknown;
+          }>)
+        : ((await scudoSql`
+            with user_rank as (
+              select
+                u.id as user_id,
+                u.name,
+                u.email,
+                u."officialStudentVerifiedAt" is not null as is_official,
+                coalesce(
+                  max(
+                    case
+                      when lower(p."taskId") like 'ferro-%' then 1
+                      when lower(p."taskId") like 'bronze-%' then 2
+                      when lower(p."taskId") like 'prata-%' then 3
+                      when lower(p."taskId") like 'ouro-%' then 4
+                      when lower(p."taskId") like 'platina-%' then 5
+                      when lower(p."taskId") like 'esmeralda-%' then 6
+                      when lower(p."taskId") like 'diamante-%' then 7
+                      when lower(p."taskId") like 'mythril-%' then 8
+                      when lower(p."taskId") like 'mestre-%' then 9
+                      when lower(p."taskId") like 'lendario-%' then 10
+                      else null
+                    end
+                  ),
+                  1
+                )::int as rank_order
+              from "User" u
+              left join "UserJornadaTaskProgress" p on p."userId" = u.id
+              group by u.id, u.name, u.email, u."officialStudentVerifiedAt"
+            ),
+            last_access as (
+              select "userId", max("updatedAt") as last_access_at
+              from "Session"
+              group by "userId"
+            )
+            select
+              ur.email,
+              ur.name,
+              ur.is_official,
+              la.last_access_at,
+              0::int as applied_jobs_count
+            from user_rank ur
+            left join last_access la on la."userId" = ur.user_id
+            where ur.rank_order = ${normalizedOrder}
+            order by ur.name asc nulls last, ur.email asc;
+          `) as Array<{
+              email: unknown;
+              name: unknown;
+              is_official: unknown;
+              last_access_at: unknown;
+              applied_jobs_count: unknown;
+          }>);
+
+    const rank = rankFromOrder(normalizedOrder);
+
+    return {
+        rank,
+        rankOrder: normalizedOrder,
+        hasAppliedJobsTracking,
+        students: studentRows.map((row) => ({
+            email: toStringValue(row.email),
+            name: toStringValue(row.name),
+            rank,
+            appliedJobsCount: toInt(row.applied_jobs_count),
+            lastAccessAt: toIsoDate(row.last_access_at),
+            isOfficial: Boolean(row.is_official),
+        })),
+    };
+}
+
+export async function getScudoCoreDashboardMetrics(studentEmail?: string): Promise<ScudoCoreDashboardMetrics> {
+    const scudoSql = getScudoSql();
+    const warnings: string[] = [];
+
+    const [
+        studentsRowsRaw,
+        activeRowsRaw,
+        rankRowsRaw,
+        hasAppliedJobsTracking,
+        jobsRowsRaw,
+        topStackRowsRaw,
+    ] = await Promise.all([
+        scudoSql`
+          select
+            count(*)::int as total,
+            count(*) filter (where "officialStudentVerifiedAt" is not null)::int as official
+          from "User";
+        `,
+        scudoSql`
+          select
+            count(distinct "userId") filter (where "updatedAt" >= now() - interval '24 hours')::int as active_24h,
+            count(distinct "userId") filter (where "updatedAt" >= now() - interval '48 hours')::int as active_48h,
+            count(distinct "userId") filter (where "updatedAt" >= now() - interval '72 hours')::int as active_72h
+          from "Session";
+        `,
+        scudoSql`
+          with user_rank as (
+            select
+              u.id as user_id,
+              coalesce(
+                max(
+                  case
+                    when lower(p."taskId") like 'ferro-%' then 1
+                    when lower(p."taskId") like 'bronze-%' then 2
+                    when lower(p."taskId") like 'prata-%' then 3
+                    when lower(p."taskId") like 'ouro-%' then 4
+                    when lower(p."taskId") like 'platina-%' then 5
+                    when lower(p."taskId") like 'esmeralda-%' then 6
+                    when lower(p."taskId") like 'diamante-%' then 7
+                    when lower(p."taskId") like 'mythril-%' then 8
+                    when lower(p."taskId") like 'mestre-%' then 9
+                    when lower(p."taskId") like 'lendario-%' then 10
+                    else null
+                  end
+                ),
+                1
+              ) as rank_order
+            from "User" u
+            left join "UserJornadaTaskProgress" p on p."userId" = u.id
+            group by u.id
+          )
+          select rank_order, count(*)::int as total
+          from user_rank
+          group by rank_order
+          order by rank_order;
+        `,
+        hasAppliedJobsTable(scudoSql),
+        scudoSql`
+          select
+            count(*)::int as total,
+            count(*) filter (where "createdAt" >= now() - interval '24 hours')::int as entered_24h,
+            count(*) filter (where "createdAt" >= now() - interval '7 days')::int as entered_7d,
+            count(*) filter (where "isActive" = true)::int as available,
+            count(*) filter (where "isActive" = false)::int as unavailable
+          from "Job";
+        `,
+        scudoSql`
+          select
+            lower(trim(stack_item)) as stack,
+            count(*)::int as total
+          from "Job" j,
+          unnest(j."stack") as stack_item
+          where trim(coalesce(stack_item, '')) <> ''
+          group by lower(trim(stack_item))
+          order by total desc
+          limit 8;
+        `,
+    ]);
+
+    const studentsRows = studentsRowsRaw as Array<{ total: unknown; official: unknown }>;
+    const activeRows = activeRowsRaw as Array<{ active_24h: unknown; active_48h: unknown; active_72h: unknown }>;
+    const rankRows = rankRowsRaw as Array<{ rank_order: unknown; total: unknown }>;
+    const jobsRows = jobsRowsRaw as Array<{
+        total: unknown;
+        entered_24h: unknown;
+        entered_7d: unknown;
+        available: unknown;
+        unavailable: unknown;
+    }>;
+    const topStackRows = topStackRowsRaw as Array<{ stack: unknown; total: unknown }>;
+
+    if (!hasAppliedJobsTracking) {
+        warnings.push('Rastreio de candidaturas nao habilitado na SCUDO.');
+    }
+
+    let appliedJobsTotal = 0;
+    let appliedJobsLast7d = 0;
+
+    if (hasAppliedJobsTracking) {
+        const appRows = (await scudoSql`
+          select
+            count(*)::int as total,
+            count(*) filter (where "createdAt" >= now() - interval '7 days')::int as last_7d
+          from "JobApplication";
+        `) as Array<{ total: unknown; last_7d: unknown }>;
+
+        appliedJobsTotal = toInt(appRows[0]?.total);
+        appliedJobsLast7d = toInt(appRows[0]?.last_7d);
+    }
 
     const rankMap = new Map<number, number>();
     for (const row of rankRows) {
@@ -771,58 +1034,6 @@ export async function getScudoDashboardMetrics(studentEmail?: string): Promise<S
         rank,
         count: rankMap.get(i + 1) ?? 0,
     }));
-
-    const jobApplicationTableRows = (await scudoSql`
-    select to_regclass('public."JobApplication"') is not null as enabled;
-  `) as Array<{ enabled: unknown }>;
-
-    const hasAppliedJobsTracking = Boolean(jobApplicationTableRows[0]?.enabled);
-    if (!hasAppliedJobsTracking) {
-        warnings.push('Rastreio de candidaturas nao habilitado na SCUDO.');
-    }
-
-    let appliedJobsTotal = 0;
-    let appliedJobsLast7d = 0;
-
-    if (hasAppliedJobsTracking) {
-        const appRows = (await scudoSql`
-      select
-        count(*)::int as total,
-        count(*) filter (where "createdAt" >= now() - interval '7 days')::int as last_7d
-      from "JobApplication";
-    `) as Array<{ total: unknown; last_7d: unknown }>;
-
-        appliedJobsTotal = toInt(appRows[0]?.total);
-        appliedJobsLast7d = toInt(appRows[0]?.last_7d);
-    }
-
-    const jobsRows = (await scudoSql`
-    select
-      count(*)::int as total,
-      count(*) filter (where "createdAt" >= now() - interval '24 hours')::int as entered_24h,
-      count(*) filter (where "createdAt" >= now() - interval '7 days')::int as entered_7d,
-      count(*) filter (where "isActive" = true)::int as available,
-      count(*) filter (where "isActive" = false)::int as unavailable
-    from "Job";
-  `) as Array<{
-        total: unknown;
-        entered_24h: unknown;
-        entered_7d: unknown;
-        available: unknown;
-        unavailable: unknown;
-    }>;
-
-    const topStackRows = (await scudoSql`
-    select
-      lower(trim(stack_item)) as stack,
-      count(*)::int as total
-    from "Job" j,
-    unnest(j."stack") as stack_item
-    where trim(coalesce(stack_item, '')) <> ''
-    group by lower(trim(stack_item))
-    order by total desc
-    limit 8;
-  `) as Array<{ stack: unknown; total: unknown }>;
 
     const topStacks: TopStack[] = topStackRows.map((row) => ({
         stack: toStringValue(row.stack, 'n/a'),
@@ -845,11 +1056,6 @@ export async function getScudoDashboardMetrics(studentEmail?: string): Promise<S
 
     return {
         generatedAt: new Date().toISOString(),
-        finance: {
-            neon: neonFinance,
-            openAi: openAiFinance,
-            totalEstimatedCostUsd30d,
-        },
         students: {
             total: toInt(studentsRows[0]?.total),
             official: toInt(studentsRows[0]?.official),
@@ -873,5 +1079,22 @@ export async function getScudoDashboardMetrics(studentEmail?: string): Promise<S
         },
         student,
         warnings,
+    };
+}
+
+export async function getScudoDashboardMetrics(studentEmail?: string): Promise<ScudoDashboardMetrics> {
+    const [core, finance] = await Promise.all([
+        getScudoCoreDashboardMetrics(studentEmail),
+        getScudoFinanceDashboard(),
+    ]);
+
+    return {
+        ...core,
+        finance: {
+            neon: finance.neon,
+            openAi: finance.openAi,
+            totalEstimatedCostUsd30d: finance.totalEstimatedCostUsd30d,
+        },
+        warnings: [...core.warnings, ...finance.warnings],
     };
 }

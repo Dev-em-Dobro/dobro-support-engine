@@ -10,9 +10,9 @@ type ModuleItem = {
 const modules: ModuleItem[] = [
   { label: 'Correção de Desafios', href: '/correcoes', active: true },
   { label: 'Dashboard Scudo', href: '/monitor/scudo', active: true },
+  { label: 'Agente de Vendas', href: '/vendas', active: true },
   { label: 'Tickets', href: '#', active: false },
   { label: 'Histórico do Aluno', href: '#', active: false },
-  { label: 'Base de Conhecimento', href: '#', active: false },
 ];
 
 export function ModuleNav() {
@@ -23,7 +23,7 @@ export function ModuleNav() {
           <Link
             key={m.label}
             href={m.href}
-            className="rounded-md px-3 py-2 text-sm font-semibold hover:bg-dobro-cinza-claro"
+            className="rounded-md px-3 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-white/5 hover:text-[#6528d3]"
           >
             {m.label}
           </Link>
@@ -32,13 +32,13 @@ export function ModuleNav() {
             key={m.label}
             aria-disabled="true"
             title="Em breve"
-            className="inline-flex cursor-not-allowed items-center gap-2 rounded-md px-3 py-2 text-sm text-dobro-cinza-escuro/60"
+            className="inline-flex cursor-not-allowed items-center gap-2 rounded-md px-3 py-2 text-sm text-white/45"
           >
             {m.label}
             <span
               className={clsx(
                 'rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
-                'bg-dobro-amarelo/20'
+                'bg-[#22c55e]/20 text-[#22c55e]'
               )}
             >
               em breve

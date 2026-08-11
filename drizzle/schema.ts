@@ -27,6 +27,7 @@ import {
   index,
   check,
   customType,
+  vector,
 } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 
@@ -65,9 +66,15 @@ export const authEventType = pgEnum('auth_event_type', [
   'logout',
   'session_refresh',
   'unauthorized_access_attempt',
+  'two_factor_enabled',
+  'two_factor_disabled',
+  'two_factor_failed',
 ]);
 
 export const viewport = pgEnum('viewport', ['desktop', 'mobile']);
+
+export const kbSourceType = pgEnum('kb_source_type', ['pdf', 'markdown', 'faq']);
+export const kbDocumentStatus = pgEnum('kb_document_status', ['processing', 'active', 'failed', 'archived']);
 
 // ---------- auth_tokens ----------
 export const authTokens = pgTable(
@@ -288,7 +295,262 @@ export const monitorUsers = pgTable('monitor_users', {
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+  // 2FA (TOTP). totpSecret é cifrado (lib/crypto-secret). Enquanto
+  // totpEnabledAt é NULL o secret é só um enrollment pendente e o 2FA não é
+  // exigido no login; após a confirmação do primeiro código vira obrigatório.
+  totpSecret: text('totp_secret'),
+  totpEnabledAt: timestamp('totp_enabled_at', { withTimezone: true }),
+  totpBackupCodes: jsonb('totp_backup_codes').$type<string[]>(),
 });
+
+// ---------- sales_users ----------
+// Vendedores do time comercial. Bootstrap via scripts/add-sales-user.ts.
+export const salesUsers = pgTable('sales_users', {
+  email: text('email').primaryKey(),
+  passwordHash: text('password_hash').notNull(),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+});
+
+// ---------- sales_audit_events ----------
+export const salesAuditEventType = pgEnum('sales_audit_event_type', [
+  'login',
+  'logout',
+  'unauthorized_access_attempt',
+  'kb_create',
+  'kb_reupload',
+  'kb_archive',
+  'kb_reactivate',
+  'kb_reindex',
+  'chat_query',
+  'chat_response',
+  'rate_limited',
+  'chat_context_update',
+  'how_it_works_update',
+  'chat_context_rejected',
+  'chat_context_restore',
+  'chat_context_submitted',
+  'chat_context_approved',
+  'chat_context_review_rejected',
+]);
+
+export const salesActorRole = pgEnum('sales_actor_role', ['sales', 'monitor', 'service']);
+
+export const salesAuditEvents = pgTable(
+  'sales_audit_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventType: salesAuditEventType('event_type').notNull(),
+    actorEmail: text('actor_email'),
+    actorRole: salesActorRole('actor_role').notNull(),
+    targetId: uuid('target_id'),
+    metadata: jsonb('metadata'),
+    ip: inet('ip'),
+    userAgent: text('user_agent'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    actorCreatedIdx: index('sales_audit_events_actor_created_idx').on(t.actorEmail, t.createdAt.desc()),
+    eventTypeCreatedIdx: index('sales_audit_events_event_type_created_idx').on(t.eventType, t.createdAt.desc()),
+  })
+);
+
+// ---------- kb_documents ----------
+export const kbDocuments = pgTable(
+  'kb_documents',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: text('title').notNull(),
+    sourceType: kbSourceType('source_type').notNull(),
+    description: text('description'),
+    tags: text('tags').array().notNull().default(sql`'{}'`),
+    status: kbDocumentStatus('status').notNull().default('processing'),
+    currentVersionId: uuid('current_version_id'),
+    createdByEmail: text('created_by_email').notNull(),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    statusUpdatedIdx: index('kb_documents_status_updated_idx').on(t.status, t.updatedAt.desc()),
+    sourceTypeIdx: index('kb_documents_source_type_idx').on(t.sourceType),
+  })
+);
+
+// ---------- kb_document_versions ----------
+export const kbDocumentVersions = pgTable(
+  'kb_document_versions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    documentId: uuid('document_id').notNull().references(() => kbDocuments.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    rawText: text('raw_text').notNull(),
+    rawBytes: bytea('raw_bytes'),
+    charCount: integer('char_count').notNull(),
+    embeddingTokens: integer('embedding_tokens').notNull().default(0),
+    embeddingCostUsd: numeric('embedding_cost_usd', { precision: 10, scale: 6 }).notNull().default('0'),
+    createdByEmail: text('created_by_email').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    docVersionUniq: uniqueIndex('kb_document_versions_doc_version_idx').on(t.documentId, t.version),
+  })
+);
+
+// ---------- kb_chunks ----------
+export const kbChunks = pgTable(
+  'kb_chunks',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    documentId: uuid('document_id').notNull().references(() => kbDocuments.id),
+    versionId: uuid('version_id').notNull().references(() => kbDocumentVersions.id, { onDelete: 'cascade' }),
+    chunkIndex: integer('chunk_index').notNull(),
+    content: text('content').notNull(),
+    tokenCount: integer('token_count').notNull(),
+    embedding: vector('embedding', { dimensions: 1536 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    versionChunkUniq: uniqueIndex('kb_chunks_version_chunk_idx').on(t.versionId, t.chunkIndex),
+    documentIdx: index('kb_chunks_document_idx').on(t.documentId),
+  })
+);
+
+// ---------- sales_conversations ----------
+export const salesConversations = pgTable(
+  'sales_conversations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    salesUserEmail: text('sales_user_email').notNull(),
+    title: text('title'),
+    messageCount: integer('message_count').notNull().default(0),
+    totalCostUsd: numeric('total_cost_usd', { precision: 10, scale: 6 }).notNull().default('0'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userUpdatedIdx: index('sales_conversations_user_updated_idx').on(
+      t.salesUserEmail,
+      t.updatedAt.desc()
+    ),
+  })
+);
+
+// ---------- sales_messages ----------
+export const salesMessageRole = pgEnum('sales_message_role', ['user', 'assistant', 'system']);
+
+export const salesMessages = pgTable(
+  'sales_messages',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => salesConversations.id, { onDelete: 'cascade' }),
+    role: salesMessageRole('role').notNull(),
+    content: text('content').notNull(),
+    sources: jsonb('sources').$type<
+      { documentId: string; title: string; versionId: string; chunkId: string; score: number }[]
+    >(),
+    model: text('model'),
+    promptVersion: text('prompt_version'),
+    // Prompt de sistema efetivo no momento da resposta (regras + contexto do
+    // gestor + trechos da KB). Permite depuração forense de respostas geradas
+    // por chunks desatualizados ou prompt injection. Só preenchido em mensagens
+    // do assistente.
+    effectivePrompt: text('effective_prompt'),
+    // Opções do Modo Quebra de Objeção, salvas estruturadas pra reconstruir os
+    // cards copiáveis ao reabrir a conversa. NULL em mensagens normais.
+    objectionOptions: jsonb('objection_options').$type<string[]>(),
+    tokensIn: integer('tokens_in').notNull().default(0),
+    tokensOut: integer('tokens_out').notNull().default(0),
+    costUsd: numeric('cost_usd', { precision: 10, scale: 6 }).notNull().default('0'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    conversationCreatedIdx: index('sales_messages_conversation_created_idx').on(
+      t.conversationId,
+      t.createdAt
+    ),
+  })
+);
+
+// ---------- sales_settings ----------
+// Key-value editável pelo gestor de vendas (role 'monitor'). Chaves:
+//   chat_context — texto livre concatenado ao SYSTEM_PROMPT do agente
+//   how_it_works — markdown lido pelos vendedores em /vendas/como-funciona
+// RLS: service/monitor full; sales SELECT (em 0011_sales_settings.sql).
+export const salesSettings = pgTable('sales_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull().default(''),
+  updatedByEmail: text('updated_by_email'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  // Aprovação two-eyes (opt-in via SALES_CONTEXT_REQUIRE_APPROVAL). Quando
+  // ligado, a edição fica aqui como pendente até um SEGUNDO monitor aprovar;
+  // só então vira `value`. NULL = nada aguardando revisão.
+  pendingValue: text('pending_value'),
+  pendingByEmail: text('pending_by_email'),
+  pendingAt: timestamp('pending_at', { withTimezone: true }),
+});
+
+export type SalesSettingKey = 'chat_context' | 'how_it_works';
+
+// ---------- sales_settings_history ----------
+// Snapshot imutável de cada versão salva de uma chave de sales_settings.
+// Permite rollback rápido (≤1 min) caso uma versão maliciosa do chat_context
+// entre em produção — sem precisar reescrever do zero ou mexer no DB.
+// Insert-only: nunca atualizamos/apagamos linhas aqui (é o registro forense).
+export const salesSettingsHistory = pgTable(
+  'sales_settings_history',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    key: text('key').notNull(),
+    version: integer('version').notNull(),
+    value: text('value').notNull(),
+    editedByEmail: text('edited_by_email'),
+    editedAt: timestamp('edited_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    keyVersionUniq: uniqueIndex('sales_settings_history_key_version_idx').on(t.key, t.version),
+    keyEditedIdx: index('sales_settings_history_key_edited_idx').on(t.key, t.editedAt.desc()),
+  })
+);
+
+// ---------- sales_eval_baseline ----------
+// Respostas-baseline do agente pras perguntas canônicas (lib/sales-eval). Cada
+// linha guarda a resposta e o embedding gerados num momento "confiável". Toda
+// avaliação posterior compara as respostas atuais com este baseline pra
+// detectar mudança de comportamento (ex.: chat_context envenenado).
+export const salesEvalBaseline = pgTable('sales_eval_baseline', {
+  questionId: text('question_id').primaryKey(),
+  question: text('question').notNull(),
+  answer: text('answer').notNull(),
+  embedding: vector('embedding', { dimensions: 1536 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------- sales_eval_runs ----------
+// Histórico de execuções da avaliação. avgDivergence/maxDivergence em [0,1]
+// (0 = idêntico ao baseline). flagged=true quando passou do threshold.
+export const salesEvalRuns = pgTable(
+  'sales_eval_runs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    trigger: text('trigger').notNull(), // 'manual' | 'context_change' | 'baseline'
+    chatContextHash: text('chat_context_hash'),
+    questionCount: integer('question_count').notNull().default(0),
+    avgDivergence: numeric('avg_divergence', { precision: 6, scale: 4 }),
+    maxDivergence: numeric('max_divergence', { precision: 6, scale: 4 }),
+    flagged: boolean('flagged').notNull().default(false),
+    isBaseline: boolean('is_baseline').notNull().default(false),
+    details: jsonb('details').$type<{ questionId: string; divergence: number }[]>(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    createdIdx: index('sales_eval_runs_created_idx').on(t.createdAt.desc()),
+  })
+);
 
 // ---------- Relations ----------
 export const submissionsRelations = relations(submissions, ({ many, one }) => ({
@@ -329,6 +591,30 @@ export const pdfsRelations = relations(pdfs, ({ one }) => ({
   }),
 }));
 
+export const kbDocumentsRelations = relations(kbDocuments, ({ many }) => ({
+  versions: many(kbDocumentVersions),
+  chunks: many(kbChunks),
+}));
+
+export const kbDocumentVersionsRelations = relations(kbDocumentVersions, ({ one, many }) => ({
+  document: one(kbDocuments, {
+    fields: [kbDocumentVersions.documentId],
+    references: [kbDocuments.id],
+  }),
+  chunks: many(kbChunks),
+}));
+
+export const kbChunksRelations = relations(kbChunks, ({ one }) => ({
+  document: one(kbDocuments, {
+    fields: [kbChunks.documentId],
+    references: [kbDocuments.id],
+  }),
+  version: one(kbDocumentVersions, {
+    fields: [kbChunks.versionId],
+    references: [kbDocumentVersions.id],
+  }),
+}));
+
 // ---------- Type exports ----------
 export type Submission = typeof submissions.$inferSelect;
 export type NewSubmission = typeof submissions.$inferInsert;
@@ -346,3 +632,25 @@ export type AuthEvent = typeof authEvents.$inferSelect;
 export type NewAuthEvent = typeof authEvents.$inferInsert;
 export type MonitorUser = typeof monitorUsers.$inferSelect;
 export type NewMonitorUser = typeof monitorUsers.$inferInsert;
+export type KbDocument = typeof kbDocuments.$inferSelect;
+export type NewKbDocument = typeof kbDocuments.$inferInsert;
+export type KbDocumentVersion = typeof kbDocumentVersions.$inferSelect;
+export type NewKbDocumentVersion = typeof kbDocumentVersions.$inferInsert;
+export type KbChunk = typeof kbChunks.$inferSelect;
+export type NewKbChunk = typeof kbChunks.$inferInsert;
+export type SalesUser = typeof salesUsers.$inferSelect;
+export type NewSalesUser = typeof salesUsers.$inferInsert;
+export type SalesAuditEvent = typeof salesAuditEvents.$inferSelect;
+export type NewSalesAuditEvent = typeof salesAuditEvents.$inferInsert;
+export type SalesConversation = typeof salesConversations.$inferSelect;
+export type NewSalesConversation = typeof salesConversations.$inferInsert;
+export type SalesMessage = typeof salesMessages.$inferSelect;
+export type NewSalesMessage = typeof salesMessages.$inferInsert;
+export type SalesSetting = typeof salesSettings.$inferSelect;
+export type NewSalesSetting = typeof salesSettings.$inferInsert;
+export type SalesSettingsHistory = typeof salesSettingsHistory.$inferSelect;
+export type NewSalesSettingsHistory = typeof salesSettingsHistory.$inferInsert;
+export type SalesEvalBaseline = typeof salesEvalBaseline.$inferSelect;
+export type NewSalesEvalBaseline = typeof salesEvalBaseline.$inferInsert;
+export type SalesEvalRun = typeof salesEvalRuns.$inferSelect;
+export type NewSalesEvalRun = typeof salesEvalRuns.$inferInsert;

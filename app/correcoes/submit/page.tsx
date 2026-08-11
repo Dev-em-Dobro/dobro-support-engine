@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 const SubmitForm = dynamic(() => import('./SubmitForm'), {
   ssr: false,
   loading: () => (
-    <p className="text-sm text-dobro-cinza-escuro/60">Carregando formulário…</p>
+    <p className="text-sm text-white/60">Carregando formulário…</p>
   ),
 });
 
@@ -14,19 +14,19 @@ export default function SubmitPage() {
   return (
     <section className="mx-auto flex max-w-2xl flex-col gap-6 py-10">
       <div className="flex flex-col gap-3">
-        <span className="inline-block self-start rounded-full bg-dobro-amarelo/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide">
+        <span className="ds-badge ds-badge-roxo-soft self-start uppercase tracking-wide">
           Correção DevQuest
         </span>
-        <h1 className="font-titulo text-3xl font-bold md:text-4xl">
+        <h1 className="ds-title">
           Cola o link, recebe a correção na hora
         </h1>
-        <p className="max-w-xl text-base text-dobro-cinza-escuro/80">
+        <p className="ds-text max-w-xl">
           Os agentes da Dobro leem seu código inteiro, corrigem com carinho e te
           devolvem a correção aqui nessa página em cerca de 1 minuto.
         </p>
       </div>
 
-      <div className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-dobro-cinza-escuro/10 md:p-8">
+      <div className="ds-card p-6 md:p-8">
         <SubmitForm />
       </div>
     </section>

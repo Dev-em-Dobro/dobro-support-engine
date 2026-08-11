@@ -4,8 +4,119 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------
+   Camada de componentes do Design System (docs/ds-site-devemdobro.md).
+   Classes reutilizáveis pra padronizar seções, cards, botões e badges
+   sem repetir as longas strings de utilitários em cada página.
+   --------------------------------------------------------------------- */
+@layer components {
+  /* Estrutura de seção — padding e largura padrão do DS */
+  .ds-section {
+    @apply w-full px-6 py-16 md:py-20;
+    background-color: var(--dobro-bg);
+  }
+  .ds-section-alt {
+    @apply w-full px-6 py-16 md:py-20;
+    background-color: var(--dobro-bg-alt);
+  }
+  .ds-container {
+    @apply mx-auto w-full max-w-ds;
+  }
+
+  /* Tipografia */
+  .ds-badge-label {
+    @apply mb-6 inline-block font-titulo text-[11px] font-bold uppercase tracking-[2px];
+    color: var(--dobro-branco);
+  }
+  .ds-title {
+    @apply font-titulo text-[32px] font-bold leading-tight text-white md:text-[40px];
+  }
+  .ds-subtitle {
+    @apply font-titulo text-[24px] font-bold text-white;
+  }
+  .ds-text {
+    @apply font-corpo text-[16px] leading-relaxed text-white/80;
+  }
+  .ds-text-sm {
+    @apply font-corpo text-[14px] leading-relaxed text-white/70;
+  }
+
+  /* Cards */
+  .ds-card {
+    @apply rounded-lg border transition-colors duration-200;
+    background-color: var(--dobro-surface-elev);
+    border-color: var(--dobro-border);
+  }
+  .ds-card:hover {
+    border-color: var(--ds-roxo);
+  }
+
+  /* Botões */
+  .ds-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-6 py-3 font-titulo font-bold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .ds-btn-primary {
+    @apply text-white;
+    background-color: var(--ds-roxo);
+  }
+  .ds-btn-primary:hover:not(:disabled) {
+    background-color: var(--ds-roxo-hover);
+  }
+  .ds-btn-success {
+    @apply text-white;
+    background-color: var(--ds-verde);
+  }
+  .ds-btn-success:hover:not(:disabled) {
+    filter: brightness(0.92);
+  }
+  .ds-btn-secondary {
+    @apply border bg-transparent text-white;
+    border-color: var(--dobro-border-strong);
+  }
+  .ds-btn-secondary:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--ds-roxo);
+  }
+
+  /* Badges em pílula */
+  .ds-badge {
+    @apply inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 font-titulo text-[12px] font-bold;
+  }
+  .ds-badge-roxo {
+    @apply text-white;
+    background-color: var(--ds-roxo);
+  }
+  .ds-badge-verde {
+    @apply text-white;
+    background-color: var(--ds-verde);
+  }
+  .ds-badge-roxo-soft {
+    color: #c4b5fd;
+    background-color: rgba(101, 40, 211, 0.18);
+  }
+
+  /* Link com hover roxo */
+  .ds-link {
+    @apply text-white transition-colors duration-200;
+  }
+  .ds-link:hover {
+    color: var(--ds-roxo);
+  }
+}
+
 :root {
-  /* Brand tokens */
+  /* -------------------------------------------------------------------
+     Design System — docs/ds-site-devemdobro.md
+     Paleta oficial. Tokens semânticos abaixo derivam destes.
+     ------------------------------------------------------------------- */
+  --ds-roxo: #6528d3; /* primária — CTAs, destaques, hover de borda */
+  --ds-roxo-hover: #5020b0;
+  --ds-verde: #22c55e; /* sucesso, badges positivos */
+  --ds-vermelho: #ef4444; /* alertas, itens negativos */
+  --ds-laranja: #ff6b35; /* badges especiais, urgência */
+  --ds-azul: #3b82f6; /* badges informativos */
+
+  /* Brand tokens (compat) */
   --dobro-roxo-primario: #6528d3;
   --dobro-verde-acao: #6bb27c;
   --dobro-verde-claro: #22c55e;
@@ -13,12 +124,13 @@
   --dobro-cinza-claro: #1a1a1a;
   --dobro-branco: #ededed;
 
-  /* Superfícies dark */
-  --dobro-bg: #111111;
-  --dobro-surface: #000000;
-  --dobro-surface-elev: #1a1a1a;
-  --dobro-border: #333333;
-  --dobro-border-strong: #444444;
+  /* Superfícies dark — escala do DS: preto → 0d0d0d → 111 → 1a1a1a */
+  --dobro-bg: #000000; /* background principal (body / shell) */
+  --dobro-bg-alt: #111111; /* background secundário (alterna entre seções) */
+  --dobro-surface: #0d0d0d; /* superfície mais escura */
+  --dobro-surface-elev: #1a1a1a; /* cards e elementos internos */
+  --dobro-border: #333333; /* borda padrão de cards */
+  --dobro-border-strong: #444444; /* borda alternativa */
   --dobro-text: #ededed;
   --dobro-text-muted: rgba(237, 237, 237, 0.72);
   --dobro-text-faint: rgba(237, 237, 237, 0.45);
@@ -31,13 +143,15 @@ body {
   font-family: 'Ubuntu', 'Inter', 'Plus Jakarta Sans', sans-serif;
 }
 
+/* DS: títulos em branco; destaques de cor vão em <span> dentro do título.
+   (antes os headings vinham verdes por padrão — fora do spec do DS) */
 h1,
 h2,
 h3,
 h4 {
-  font-family: 'Ubuntu', sans-serif;
+  font-family: 'Ubuntu', 'Helvetica', sans-serif;
   font-weight: 700;
-  color: var(--dobro-verde-claro);
+  color: var(--dobro-text);
 }
 
 .font-mono {
@@ -249,4 +363,19 @@ code {
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
+}
+
+/* Indicador "digitando" — três bolinhas no balão do assistente enquanto aguarda resposta */
+@keyframes ds-typing-dot {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+
+.ds-typing-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background-color: #a78bfa;
+  animation: ds-typing-dot 1.2s ease-in-out infinite;
 }

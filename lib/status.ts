@@ -19,15 +19,18 @@ export const statusLabelPtBr: Record<SubmissionStatus, string> = {
   failed: 'Falhou',
 };
 
+// Badges em tom translúcido + texto claro — paleta do Design System
+// (docs/ds-site-devemdobro.md). Cores explícitas pra renderizar bem no
+// tema dark sem depender da camada de override do globals.css.
 export const statusBadgeClass: Record<SubmissionStatus, string> = {
-  pending_auth: 'bg-gray-200 text-gray-800',
-  queued: 'bg-blue-100 text-blue-800',
-  processing: 'bg-indigo-100 text-indigo-800',
-  draft: 'bg-amber-100 text-amber-800',
-  approved: 'bg-emerald-100 text-emerald-800',
-  rejected: 'bg-red-100 text-red-800',
-  delivered: 'bg-dobro-laranja/15 text-dobro-laranja',
-  failed: 'bg-red-100 text-red-800',
+  pending_auth: 'bg-white/10 text-white/70',
+  queued: 'bg-[#3b82f6]/15 text-[#93c5fd]',
+  processing: 'bg-[#6366f1]/15 text-[#a5b4fc]',
+  draft: 'bg-[#ff6b35]/15 text-[#fdba74]',
+  approved: 'bg-[#22c55e]/15 text-[#6ee7b7]',
+  rejected: 'bg-[#ef4444]/15 text-[#fca5a5]',
+  delivered: 'bg-[#6528d3]/15 text-[#c4b5fd]',
+  failed: 'bg-[#ef4444]/15 text-[#fca5a5]',
 };
 
 export function statusLabel(s: string): string {

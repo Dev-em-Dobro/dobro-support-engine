@@ -47,7 +47,8 @@
       "Bash(python3 -c ' *)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(echo \"EXIT: $?\")"
     ]
   }
 }

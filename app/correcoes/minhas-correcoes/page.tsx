@@ -18,16 +18,16 @@ function studentStatusLabel(status: string): string {
 
 function studentStatusBadge(status: string): string {
   if (status === 'failed' || status === 'rejected') {
-    return 'bg-red-100 text-red-800';
+    return 'bg-[#ef4444]/15 text-[#fca5a5]';
   }
   if (
     status === 'delivered' ||
     status === 'approved' ||
     status === 'draft'
   ) {
-    return 'bg-emerald-100 text-emerald-800';
+    return 'bg-[#22c55e]/15 text-[#6ee7b7]';
   }
-  return 'bg-blue-100 text-blue-800';
+  return 'bg-[#3b82f6]/15 text-[#93c5fd]';
 }
 
 export const metadata = { title: 'Minhas correções · Dobro Support' };
@@ -53,30 +53,30 @@ export default async function MinhasCorrecoesPage({
     <section className="mx-auto flex max-w-4xl flex-col gap-4 py-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-titulo text-3xl font-bold">
+          <h1 className="ds-subtitle text-[28px]">
             Minhas correções
           </h1>
-          <p className="text-dobro-cinza-escuro/70">
+          <p className="ds-text-sm">
             Histórico das suas submissões.
           </p>
         </div>
         <Link
           href="/correcoes/submit"
-          className="rounded bg-dobro-laranja px-4 py-2 text-sm font-medium text-white hover:bg-dobro-laranja/90"
+          className="ds-btn ds-btn-primary px-4 py-2 text-sm"
         >
           + Enviar novo desafio
         </Link>
       </div>
 
       {searchParams.ok && (
-        <div className="rounded border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+        <div className="rounded-md border border-[#22c55e]/40 bg-[#22c55e]/10 px-4 py-3 text-sm text-[#6ee7b7]">
           Desafio enviado. A gente avisa aqui quando a correção sair.
         </div>
       )}
 
       {rows.length === 0 ? (
-        <div className="rounded border border-dobro-cinza-escuro/10 bg-dobro-cinza-claro/50 p-8 text-center">
-          <p className="text-dobro-cinza-escuro/70">
+        <div className="ds-card p-8 text-center">
+          <p className="ds-text-sm">
             Você ainda não enviou nenhum desafio.
           </p>
         </div>
@@ -85,18 +85,18 @@ export default async function MinhasCorrecoesPage({
           {rows.map((row) => (
             <li
               key={row.id}
-              className="flex flex-col gap-2 rounded border border-dobro-cinza-escuro/10 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
+              className="ds-card flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="flex flex-col gap-1">
                 <a
                   href={row.githubUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="font-medium hover:underline"
+                  className="font-medium text-white hover:text-[#6528d3] hover:underline"
                 >
                   {row.githubUrl.replace('https://github.com/', '')}
                 </a>
-                <span className="text-xs text-dobro-cinza-escuro/60">
+                <span className="text-xs text-white/60">
                   Enviado em{' '}
                   {new Date(row.submittedAt).toLocaleString('pt-BR', {
                     dateStyle: 'short',
@@ -113,7 +113,7 @@ export default async function MinhasCorrecoesPage({
                 {row.status !== 'failed' && row.status !== 'rejected' && (
                   <Link
                     href={`/correcoes/${row.id}`}
-                    className="text-sm font-medium text-dobro-laranja hover:underline"
+                    className="text-sm font-medium text-[#6528d3] hover:underline"
                   >
                     Ver correção →
                   </Link>
