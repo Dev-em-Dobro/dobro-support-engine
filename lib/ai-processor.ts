@@ -21,6 +21,7 @@ import { submissions, corrections, monitorActions } from '@/drizzle/schema';
 import { generateCorrectionViaAI } from './ai-correction';
 import { polishCorrection } from './ai-reviewer';
 import { sumUsage, type UsageReport } from './cost';
+import { storeCorrectionPdf } from './pdf';
 
 // How long a "processing" row can sit before we consider it stale and retry.
 const STALE_PROCESSING_MINUTES = 5;
@@ -183,6 +184,23 @@ export async function processSubmissionWithAI(submissionId: string): Promise<
       genUsage: generated.usage,
       polishUsage: polish.usage,
     });
+
+    // Pré-gera o PDF agora que a correção está gravada. Correção grande leva
+    // mais de 30s pra renderizar e estourava o timeout da rota de download;
+    // aqui o orçamento é o da function de processamento (maxDuration 300).
+    //
+    // Best-effort de propósito: a correção já está entregue e visível na
+    // página. Se o PDF falhar, a rota de download renderiza na hora, como
+    // antes. Não vale reverter uma correção boa por causa disso.
+    try {
+      await storeCorrectionPdf(submissionId);
+    } catch (pdfErr) {
+      console.error(
+        `[ai-processor] pré-geração do PDF falhou pra ${submissionId} (correção segue entregue):`,
+        pdfErr instanceof Error ? pdfErr.message : pdfErr
+      );
+    }
+
     return { ok: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'erro desconhecido na geração IA';

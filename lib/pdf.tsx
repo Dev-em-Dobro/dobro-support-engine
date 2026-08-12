@@ -11,13 +11,16 @@
  *   Ubuntu       — títulos + body
  *   MartianMono  — code blocks + refs de arquivo
  *
- * Two entry points:
+ * Entry points:
  *   - renderCorrectionPdf(data)   pure, returns Buffer (used by preview + storage)
- *   - generateAndStorePdf(id, email)   loads from DB, stores in pdfs table,
- *     flips submission to delivered
+ *   - storeCorrectionPdf(id)      service-scoped, pré-gera e guarda em pdfs.
+ *     Chamado quando a correção fica pronta, pra tirar o render do caminho do
+ *     download (documento grande passa de 30s e estoura o timeout da rota).
+ *   - generateAndStorePdf(id, email)   monitor-scoped, guarda em pdfs e flipa
+ *     a submission pra delivered
  */
 
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import {
   Document,
   Page,
@@ -28,7 +31,7 @@ import {
   Font,
   renderToBuffer,
 } from '@react-pdf/renderer';
-import { asMonitor } from './db-context';
+import { asMonitor, asService } from './db-context';
 import { corrections, pdfs, submissions } from '@/drizzle/schema';
 import { setSubmissionStatus } from './monitor-actions';
 import { SEVERITY_META, type Severity } from './severity';
@@ -792,6 +795,106 @@ export async function renderCorrectionPdf(data: RenderPdfInput): Promise<Buffer>
   const state = await ensureFontsReady();
   const styles = makeStyles(state);
   return renderToBuffer(<PdfDoc {...data} styles={styles} />);
+}
+
+/** Teto da coluna: pdfs_size_chk no schema rejeita acima disso. */
+const PDF_MAX_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Busca o PDF já gerado de uma submission, versão mais recente primeiro.
+ * Retorna null quando não existe — correções antigas, geradas antes da
+ * pré-geração existir, caem nesse caso.
+ */
+export async function getStoredPdf(
+  submissionId: string
+): Promise<{ data: Buffer; version: number } | null> {
+  return asService(async (tx) => {
+    const rows = await tx
+      .select({ data: pdfs.data, version: pdfs.version })
+      .from(pdfs)
+      .where(eq(pdfs.submissionId, submissionId))
+      .orderBy(desc(pdfs.version))
+      .limit(1);
+    return rows[0] ?? null;
+  });
+}
+
+/**
+ * Renderiza e guarda o PDF de uma submission já corrigida.
+ *
+ * Diferente de generateAndStorePdf: roda como service (não precisa de monitor
+ * logado) e NÃO mexe no status da submission — quem cuida disso é o fluxo de
+ * aprovação. Serve só pra deixar os bytes prontos antes de alguém pedir.
+ *
+ * Não-destrutiva: se já existe PDF pra essa submission, não faz nada. Assim
+ * pode ser chamada de novo sem inflar versões nem re-renderizar à toa.
+ */
+export async function storeCorrectionPdf(
+  submissionId: string
+): Promise<{ version: number; sizeBytes: number } | null> {
+  const data = await asService(async (tx) => {
+    const existing = await tx
+      .select({ version: pdfs.version })
+      .from(pdfs)
+      .where(eq(pdfs.submissionId, submissionId))
+      .limit(1);
+    if (existing.length > 0) return null;
+
+    const sub = await tx
+      .select()
+      .from(submissions)
+      .where(eq(submissions.id, submissionId))
+      .limit(1);
+    if (sub.length === 0) return null;
+
+    const corr = await tx
+      .select()
+      .from(corrections)
+      .where(eq(corrections.submissionId, submissionId))
+      .limit(1);
+    if (corr.length === 0) return null;
+
+    return { sub: sub[0], corr: corr[0] };
+  });
+
+  if (!data) return null;
+
+  // Render fora da transação: leva dezenas de segundos em correção grande e
+  // não há motivo pra segurar conexão do pool durante isso.
+  const buffer = await renderCorrectionPdf({
+    studentEmail: data.sub.studentEmail,
+    githubUrl: data.sub.githubUrl,
+    grade: data.corr.grade,
+    strengths: data.corr.strengths as string[],
+    improvements: data.corr.improvements as ImprovementPdf[],
+    narrativeMd: data.corr.narrativeMd,
+    correctedAt: data.sub.correctedAt ?? new Date(),
+  });
+
+  if (buffer.length > PDF_MAX_BYTES) {
+    throw new Error(`PDF excede o limite de 2MB: ${buffer.length} bytes`);
+  }
+
+  return asService(async (tx) => {
+    // Recheca dentro da transação: entre a leitura acima e agora, outro
+    // caminho (download concorrente) pode ter gravado. O unique index em
+    // (submission_id, version) barraria, mas errar de forma barulhenta num
+    // caminho best-effort não ajuda ninguém.
+    const existing = await tx
+      .select({ version: pdfs.version })
+      .from(pdfs)
+      .where(eq(pdfs.submissionId, submissionId))
+      .limit(1);
+    if (existing.length > 0) return null;
+
+    await tx.insert(pdfs).values({
+      submissionId,
+      data: buffer,
+      version: 1,
+      sizeBytes: buffer.length,
+    });
+    return { version: 1, sizeBytes: buffer.length };
+  });
 }
 
 /** Generate PDF for a submission and mark it as delivered. */
