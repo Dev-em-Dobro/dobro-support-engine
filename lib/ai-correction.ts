@@ -179,15 +179,48 @@ function parseGithubUrl(url: string): { owner: string; repo: string } {
   return { owner: m[1], repo: m[2].replace(/\.git$/, '') };
 }
 
-function ghHeaders(): HeadersInit {
+/**
+ * Um GITHUB_TOKEN expirado ou revogado é pior que token nenhum: o GitHub
+ * responde 401 "Bad credentials" até em repo público, enquanto a mesma request
+ * sem Authorization funcionaria. Na primeira 401 a gente descarta o token pelo
+ * resto do processo e segue anônimo, em vez de derrubar todas as correções.
+ */
+let githubTokenRejected = false;
+
+function ghHeaders(withAuth = true): HeadersInit {
   const headers: HeadersInit = {
     Accept: 'application/vnd.github+json',
     'X-GitHub-Api-Version': '2022-11-28',
   };
-  if (env.GITHUB_TOKEN) {
+  if (withAuth && env.GITHUB_TOKEN && !githubTokenRejected) {
     (headers as Record<string, string>).Authorization = `Bearer ${env.GITHUB_TOKEN}`;
   }
   return headers;
+}
+
+/**
+ * Fetch na API do GitHub com fallback pra anônimo quando o token é rejeitado.
+ * Só refaz a request na primeira 401 — depois disso o flag já tirou o header,
+ * então os N blobs de arquivo não pagam request dobrada.
+ */
+async function ghFetch(url: string): Promise<Response> {
+  const res = await fetch(url, {
+    headers: ghHeaders(),
+    signal: AbortSignal.timeout(GITHUB_FETCH_TIMEOUT_MS),
+  });
+  // 401 só acontece se mandamos Authorization — repo público sem header dá 200.
+  if (res.status === 401 && env.GITHUB_TOKEN && !githubTokenRejected) {
+    githubTokenRejected = true;
+    console.warn(
+      '[ai-correction:github] GITHUB_TOKEN rejeitado (401 Bad credentials). ' +
+        'Seguindo anônimo, limitado a 60 req/h por IP — renove o token nas env vars.'
+    );
+    return fetch(url, {
+      headers: ghHeaders(false),
+      signal: AbortSignal.timeout(GITHUB_FETCH_TIMEOUT_MS),
+    });
+  }
+  return res;
 }
 
 function shouldSkipFile(path: string, size: number | undefined): boolean {
@@ -223,10 +256,7 @@ function truncateContent(content: string, maxChars: number): { text: string; tru
 }
 
 async function fetchBlob(owner: string, repo: string, sha: string): Promise<string | null> {
-  const res = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/git/blobs/${sha}`,
-    { headers: ghHeaders(), signal: AbortSignal.timeout(GITHUB_FETCH_TIMEOUT_MS) }
-  );
+  const res = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/git/blobs/${sha}`);
   if (!res.ok) return null;
   const data = await res.json();
   if (data.encoding !== 'base64' || typeof data.content !== 'string') return null;
@@ -368,10 +398,7 @@ async function fetchRepoContext(
   const base = `https://api.github.com/repos/${owner}/${repo}`;
 
   // Repo metadata
-  const repoRes = await fetch(base, {
-    headers: ghHeaders(),
-    signal: AbortSignal.timeout(GITHUB_FETCH_TIMEOUT_MS),
-  });
+  const repoRes = await ghFetch(base);
   if (!repoRes.ok) {
     throw new Error(
       `GitHub API ${repoRes.status} pra ${owner}/${repo}: ${await repoRes.text().catch(() => '')}`
@@ -382,10 +409,7 @@ async function fetchRepoContext(
 
   // README
   let readme: string | null = null;
-  const readmeRes = await fetch(`${base}/readme`, {
-    headers: ghHeaders(),
-    signal: AbortSignal.timeout(GITHUB_FETCH_TIMEOUT_MS),
-  });
+  const readmeRes = await ghFetch(`${base}/readme`);
   if (readmeRes.ok) {
     const rd = await readmeRes.json();
     if (rd.content && rd.encoding === 'base64') {
@@ -395,10 +419,7 @@ async function fetchRepoContext(
   }
 
   // Full file tree
-  const treeRes = await fetch(
-    `${base}/git/trees/${defaultBranch}?recursive=1`,
-    { headers: ghHeaders(), signal: AbortSignal.timeout(GITHUB_FETCH_TIMEOUT_MS) }
-  );
+  const treeRes = await ghFetch(`${base}/git/trees/${defaultBranch}?recursive=1`);
   let allEntries: TreeEntry[] = [];
   let totalFilesInRepo = 0;
   if (treeRes.ok) {
