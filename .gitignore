@@ -16,3 +16,4 @@ docs/*
 
 # TypeScript incremental build cache — regenerated em cada build, nunca versionar
 *.tsbuildinfo
+.gstack/
