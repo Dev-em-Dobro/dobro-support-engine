@@ -47,65 +47,75 @@ import React from 'react';
 const ANA_CHAT_URL = 'https://agents.devemdobro.com/chat/ana';
 
 // ---------- Fonts ----------
-// @fontsource packages served via jsdelivr CDN; @react-pdf fetches TTFs on first
-// render and caches in-process. If CDN is unreachable or the TTFs fail to load,
-// we downgrade to Helvetica (no brand typography but still renders).
+// Pacotes @fontsource servidos pela CDN da jsdelivr. Eles NÃO publicam .ttf —
+// só .woff e .woff2 — e o react-pdf lê .woff sem problema (.woff2 não).
+// Se a CDN falhar ou demorar, caímos pra Helvetica: sem tipografia da marca,
+// mas o PDF sai.
 const FONT_CDN = 'https://cdn.jsdelivr.net/npm';
+const FONT_VERSION = '5.3.0';
+/** Teto por fonte. Sem isso uma CDN travada prende a function até o timeout. */
+const FONT_FETCH_TIMEOUT_MS = 8000;
 
 type FontState = 'unknown' | 'custom' | 'fallback';
 let fontState: FontState = 'unknown';
 
 /**
- * Pre-warm fonts by fetching the TTFs ourselves before handing off to react-pdf.
- * If any fetch fails, we mark state=fallback and skip Font.register so styles
- * can switch to Helvetica family names without react-pdf trying to fetch again.
+ * Baixa as fontes uma única vez e registra como data URL.
+ *
+ * A versão anterior fazia 8 HEAD "pra pré-aquecer" e depois passava as URLs
+ * pro react-pdf, que baixava tudo de novo — 16 requests, e o HEAD não aquecia
+ * cache nenhum porque não traz corpo. Aqui é um GET por fonte, com timeout, e
+ * o byte baixado é o que vai pro Font.register.
  */
 async function ensureFontsReady(): Promise<FontState> {
   if (fontState !== 'unknown') return fontState;
 
+  const file = (pkg: string, name: string) =>
+    `${FONT_CDN}/@fontsource/${pkg}@${FONT_VERSION}/files/${name}.woff`;
+
   const urls = [
-    `${FONT_CDN}/@fontsource/ubuntu@5.0.18/files/ubuntu-latin-400-normal.ttf`,
-    `${FONT_CDN}/@fontsource/ubuntu@5.0.18/files/ubuntu-latin-500-normal.ttf`,
-    `${FONT_CDN}/@fontsource/ubuntu@5.0.18/files/ubuntu-latin-700-normal.ttf`,
-    `${FONT_CDN}/@fontsource/plus-jakarta-sans@5.0.18/files/plus-jakarta-sans-latin-400-normal.ttf`,
-    `${FONT_CDN}/@fontsource/plus-jakarta-sans@5.0.18/files/plus-jakarta-sans-latin-500-normal.ttf`,
-    `${FONT_CDN}/@fontsource/plus-jakarta-sans@5.0.18/files/plus-jakarta-sans-latin-600-normal.ttf`,
-    `${FONT_CDN}/@fontsource/martian-mono@5.0.18/files/martian-mono-latin-400-normal.ttf`,
-    `${FONT_CDN}/@fontsource/martian-mono@5.0.18/files/martian-mono-latin-600-normal.ttf`,
+    file('ubuntu', 'ubuntu-latin-400-normal'),
+    file('ubuntu', 'ubuntu-latin-500-normal'),
+    file('ubuntu', 'ubuntu-latin-700-normal'),
+    file('plus-jakarta-sans', 'plus-jakarta-sans-latin-400-normal'),
+    file('plus-jakarta-sans', 'plus-jakarta-sans-latin-500-normal'),
+    file('plus-jakarta-sans', 'plus-jakarta-sans-latin-600-normal'),
+    file('martian-mono', 'martian-mono-latin-400-normal'),
+    file('martian-mono', 'martian-mono-latin-600-normal'),
   ];
 
   try {
-    const results = await Promise.all(
-      urls.map((u) =>
-        fetch(u, { method: 'HEAD' }).then((r) => {
-          if (!r.ok) throw new Error(`font ${u} → ${r.status}`);
-          return true;
-        })
-      )
+    const srcs = await Promise.all(
+      urls.map(async (u) => {
+        const r = await fetch(u, { signal: AbortSignal.timeout(FONT_FETCH_TIMEOUT_MS) });
+        if (!r.ok) throw new Error(`font ${u} → ${r.status}`);
+        const buf = Buffer.from(await r.arrayBuffer());
+        // Font.register só aceita string: URL ou data URL. Buffer cru quebra.
+        return `data:font/woff;base64,${buf.toString('base64')}`;
+      })
     );
-    if (!results.every(Boolean)) throw new Error('partial font fetch');
 
     Font.register({
       family: 'Ubuntu',
       fonts: [
-        { src: urls[0], fontWeight: 400 },
-        { src: urls[1], fontWeight: 600 },
-        { src: urls[2], fontWeight: 700 },
+        { src: srcs[0], fontWeight: 400 },
+        { src: srcs[1], fontWeight: 600 },
+        { src: srcs[2], fontWeight: 700 },
       ],
     });
     Font.register({
       family: 'PlusJakartaSans',
       fonts: [
-        { src: urls[3], fontWeight: 400 },
-        { src: urls[4], fontWeight: 500 },
-        { src: urls[5], fontWeight: 600 },
+        { src: srcs[3], fontWeight: 400 },
+        { src: srcs[4], fontWeight: 500 },
+        { src: srcs[5], fontWeight: 600 },
       ],
     });
     Font.register({
       family: 'MartianMono',
       fonts: [
-        { src: urls[6], fontWeight: 400 },
-        { src: urls[7], fontWeight: 600 },
+        { src: srcs[6], fontWeight: 400 },
+        { src: srcs[7], fontWeight: 600 },
       ],
     });
     Font.registerHyphenationCallback((word) => [word]);
