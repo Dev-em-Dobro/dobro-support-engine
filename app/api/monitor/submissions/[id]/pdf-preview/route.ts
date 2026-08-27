@@ -50,25 +50,36 @@ export async function GET(
     );
   }
 
-  const buffer = await renderCorrectionPdf({
-    studentEmail: data.submission.studentEmail,
-    githubUrl: data.submission.githubUrl,
-    grade: data.correction.grade,
-    strengths: data.correction.strengths as string[],
-    improvements: data.correction.improvements as Parameters<
-      typeof renderCorrectionPdf
-    >[0]['improvements'],
-    narrativeMd: data.correction.narrativeMd,
-    correctedAt: data.submission.correctedAt ?? new Date(),
-  });
+  try {
+    const buffer = await renderCorrectionPdf({
+      studentEmail: data.submission.studentEmail,
+      githubUrl: data.submission.githubUrl,
+      grade: data.correction.grade,
+      strengths: data.correction.strengths as string[],
+      improvements: data.correction.improvements as Parameters<
+        typeof renderCorrectionPdf
+      >[0]['improvements'],
+      narrativeMd: data.correction.narrativeMd,
+      correctedAt: data.submission.correctedAt ?? new Date(),
+    });
 
-  return new Response(new Uint8Array(buffer), {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="previa-correcao-${params.id}.pdf"`,
-      'Content-Length': String(buffer.length),
-      'Cache-Control': 'no-store',
-    },
-  });
+    return new Response(new Uint8Array(buffer), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename="previa-correcao-${params.id}.pdf"`,
+        'Content-Length': String(buffer.length),
+        'Cache-Control': 'no-store',
+      },
+    });
+  } catch (err) {
+    console.error(
+      `[pdf-preview] falha ao renderizar ${params.id}:`,
+      err instanceof Error ? err.stack ?? err.message : err
+    );
+    return NextResponse.json(
+      { error: 'falha ao gerar a prévia do PDF' },
+      { status: 500 }
+    );
+  }
 }

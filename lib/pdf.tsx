@@ -102,6 +102,8 @@ async function ensureFontsReady(): Promise<FontState> {
       family: 'Ubuntu',
       fonts: [
         { src: srcs[0], fontWeight: 400 },
+        // O arquivo é 500; registramos 500 e 600 pra cobrir os styles.
+        { src: srcs[1], fontWeight: 500 },
         { src: srcs[1], fontWeight: 600 },
         { src: srcs[2], fontWeight: 700 },
       ],
@@ -540,7 +542,54 @@ export interface RenderPdfInput {
   strengths: string[];
   improvements: ImprovementPdf[];
   narrativeMd: string;
-  correctedAt: Date;
+  correctedAt: Date | string;
+}
+
+function asDate(value: Date | string | number | null | undefined): Date {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+  if (value == null || value === '') return new Date();
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? new Date() : d;
+}
+
+function pdfText(value: unknown): string {
+  if (value == null) return '';
+  return String(value).replace(/\u0000/g, '');
+}
+
+function normalizeImprovements(improvements: unknown): ImprovementPdf[] {
+  if (!Array.isArray(improvements)) return [];
+  return improvements.map((raw) => {
+    const imp = (raw ?? {}) as Partial<ImprovementPdf>;
+    const severity: Severity =
+      imp.severity === 'high' || imp.severity === 'medium' || imp.severity === 'low'
+        ? imp.severity
+        : 'medium';
+    return {
+      area: pdfText(imp.area) || 'Geral',
+      severity,
+      suggestion: pdfText(imp.suggestion),
+      file: imp.file ? pdfText(imp.file) : undefined,
+      lineStart: imp.lineStart,
+      lineEnd: imp.lineEnd,
+      codeSnippet: imp.codeSnippet ? pdfText(imp.codeSnippet) : undefined,
+      proposedFix: imp.proposedFix ? pdfText(imp.proposedFix) : undefined,
+    };
+  });
+}
+
+function normalizeRenderInput(data: RenderPdfInput): RenderPdfInput {
+  return {
+    studentEmail: pdfText(data.studentEmail),
+    githubUrl: pdfText(data.githubUrl),
+    grade: pdfText(data.grade),
+    strengths: Array.isArray(data.strengths)
+      ? data.strengths.map(pdfText).filter(Boolean)
+      : [],
+    improvements: normalizeImprovements(data.improvements),
+    narrativeMd: pdfText(data.narrativeMd),
+    correctedAt: asDate(data.correctedAt),
+  };
 }
 
 function formatLineRange(start?: number, end?: number): string {
@@ -549,8 +598,9 @@ function formatLineRange(start?: number, end?: number): string {
   return `linhas ${start}–${end}`;
 }
 
-function sevColor(s: Severity): string {
-  return SEVERITY_META[s].hex;
+function sevColor(s: Severity | string | undefined): string {
+  if (s === 'high' || s === 'medium' || s === 'low') return SEVERITY_META[s].hex;
+  return SEVERITY_META.medium.hex;
 }
 
 /**
@@ -591,7 +641,7 @@ function CodeBlock({
 }) {
   const tokens = highlightCode(code, lang);
   return (
-    <View style={styles.codeWindow} wrap={false}>
+    <View style={styles.codeWindow}>
       <View style={styles.codeChrome}>
         <View style={styles.codeDotsWrap}>
           <View style={[styles.codeDot, { backgroundColor: CODE_PALETTE.traffic.red }]} />
@@ -601,7 +651,7 @@ function CodeBlock({
         <Text style={styles.codeFilename}>{filename}</Text>
       </View>
       <Text style={styles.codeBody}>
-        {tokens.map((t, i) => (
+        {tokens.filter((t) => t.text).map((t, i) => (
           <Text key={i} style={{ color: t.color }}>
             {t.text}
           </Text>
@@ -651,7 +701,7 @@ function PdfDoc(props: RenderPdfInput & { styles: Styles }) {
           <View style={styles.headerMeta}>
             <Text style={styles.headerMetaLabel}>Entregue em</Text>
             <Text style={styles.headerMetaValue}>
-              {props.correctedAt.toLocaleDateString('pt-BR', {
+              {asDate(props.correctedAt).toLocaleDateString('pt-BR', {
                 day: '2-digit',
                 month: 'long',
                 year: 'numeric',
@@ -663,8 +713,10 @@ function PdfDoc(props: RenderPdfInput & { styles: Styles }) {
         <View style={styles.hero}>
           <Text style={styles.heroLabel}>Nota final</Text>
           <View style={styles.heroGradeRow}>
-            <Text style={styles.heroGradeNum}>{Number(props.grade).toFixed(1)}</Text>
-            <Text style={styles.heroGradeMax}>/10</Text>
+          <Text style={styles.heroGradeNum}>
+            {Number.isFinite(Number(props.grade)) ? Number(props.grade).toFixed(1) : '—'}
+          </Text>
+          <Text style={styles.heroGradeMax}>/10</Text>
           </View>
           <View style={styles.heroUnderline} />
           <Text style={styles.heroRepo}>{shortRepoName(props.githubUrl)}</Text>
@@ -689,9 +741,10 @@ function PdfDoc(props: RenderPdfInput & { styles: Styles }) {
           {props.improvements.map((imp, i) => {
             const lineRange = formatLineRange(imp.lineStart, imp.lineEnd);
             const sHex = sevColor(imp.severity);
+            const sevMeta = SEVERITY_META[imp.severity] ?? SEVERITY_META.medium;
             return (
               <View key={i} style={styles.impCard}>
-                <View style={styles.impTop} wrap={false}>
+                <View style={styles.impTop}>
                   <View style={styles.impIndexCol}>
                     <Text style={styles.impIndex}>
                       {String(i + 1).padStart(2, '0')}
@@ -703,7 +756,7 @@ function PdfDoc(props: RenderPdfInput & { styles: Styles }) {
                       <View style={styles.sevRow}>
                         <View style={[styles.sevDot, { backgroundColor: sHex }]} />
                         <Text style={[styles.sevLabel, { color: sHex }]}>
-                          {SEVERITY_META[imp.severity].label}
+                          {sevMeta.label}
                         </Text>
                       </View>
                     </View>
@@ -792,9 +845,37 @@ function PdfDoc(props: RenderPdfInput & { styles: Styles }) {
 
 /** Render a correction to a PDF buffer. Pure — does not hit the DB. */
 export async function renderCorrectionPdf(data: RenderPdfInput): Promise<Buffer> {
+  const input = normalizeRenderInput(data);
   const state = await ensureFontsReady();
   const styles = makeStyles(state);
-  return renderToBuffer(<PdfDoc {...data} styles={styles} />);
+  try {
+    return await renderToBuffer(<PdfDoc {...input} styles={styles} />);
+  } catch (err) {
+    console.error(
+      '[pdf] render completo falhou, tentando versão sem code blocks:',
+      err instanceof Error ? err.message : err
+    );
+    const simplified: RenderPdfInput = {
+      ...input,
+      improvements: input.improvements.map((imp) => ({
+        ...imp,
+        codeSnippet: undefined,
+        proposedFix: undefined,
+      })),
+    };
+    return renderToBuffer(<PdfDoc {...simplified} styles={styles} />);
+  }
+}
+
+/** Converte o bytea do Neon/pg pra Buffer, independente do formato do driver. */
+export function toPdfBuffer(data: unknown): Buffer {
+  if (Buffer.isBuffer(data)) return data;
+  if (data instanceof Uint8Array) return Buffer.from(data);
+  if (typeof data === 'string') {
+    const hex = data.startsWith('\\x') ? data.slice(2) : data;
+    return Buffer.from(hex, 'hex');
+  }
+  throw new Error('PDF armazenado em formato inesperado');
 }
 
 /** Teto da coluna: pdfs_size_chk no schema rejeita acima disso. */
@@ -815,7 +896,9 @@ export async function getStoredPdf(
       .where(eq(pdfs.submissionId, submissionId))
       .orderBy(desc(pdfs.version))
       .limit(1);
-    return rows[0] ?? null;
+    const row = rows[0];
+    if (!row) return null;
+    return { data: toPdfBuffer(row.data), version: row.version };
   });
 }
 
