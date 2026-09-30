@@ -13,10 +13,15 @@
 
 import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
+import { waitUntil } from '@vercel/functions';
 import { asService } from '@/lib/db-context';
 import { corrections, submissions } from '@/drizzle/schema';
+import { processSubmissionWithAI } from '@/lib/ai-processor';
 
 export const runtime = 'nodejs';
+export const maxDuration = 300;
+
+const STALE_PROCESSING_MS = 5 * 60 * 1000;
 
 export async function GET(
   _req: Request,
@@ -33,6 +38,7 @@ export async function GET(
         correctedAt: submissions.correctedAt,
         deliveredAt: submissions.deliveredAt,
         submittedAt: submissions.submittedAt,
+        updatedAt: submissions.updatedAt,
       })
       .from(submissions)
       .where(eq(submissions.id, params.id))
@@ -63,6 +69,17 @@ export async function GET(
     : data.submission.status === 'failed' || data.submission.status === 'rejected'
       ? 'failed'
       : 'processing';
+
+  // Sem cron: se o waitUntil do submit morreu, retoma só enquanto o aluno
+  // está nesta tela esperando a correção — não acorda o Neon o dia inteiro.
+  const staleCutoff = Date.now() - STALE_PROCESSING_MS;
+  const updatedAt = data.submission.updatedAt?.getTime?.() ?? new Date(data.submission.updatedAt).getTime();
+  const shouldResume =
+    data.submission.status === 'queued' ||
+    (data.submission.status === 'processing' && updatedAt < staleCutoff);
+  if (shouldResume) {
+    waitUntil(processSubmissionWithAI(params.id));
+  }
 
   return NextResponse.json({
     id: data.submission.id,
