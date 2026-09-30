@@ -557,6 +557,18 @@ function pdfText(value: unknown): string {
   return String(value).replace(/\u0000/g, '');
 }
 
+/** Yoga entra em loop se um bloco de código não cabe na página. Corta antes. */
+const PDF_CODE_MAX_LINES = 32;
+const PDF_CODE_MAX_CHARS = 2500;
+
+function clipCode(code: string): string {
+  const clipped =
+    code.length > PDF_CODE_MAX_CHARS ? `${code.slice(0, PDF_CODE_MAX_CHARS)}\n…` : code;
+  const lines = clipped.split('\n');
+  if (lines.length <= PDF_CODE_MAX_LINES) return clipped;
+  return `${lines.slice(0, PDF_CODE_MAX_LINES).join('\n')}\n…`;
+}
+
 function normalizeImprovements(improvements: unknown): ImprovementPdf[] {
   if (!Array.isArray(improvements)) return [];
   return improvements.map((raw) => {
@@ -572,8 +584,8 @@ function normalizeImprovements(improvements: unknown): ImprovementPdf[] {
       file: imp.file ? pdfText(imp.file) : undefined,
       lineStart: imp.lineStart,
       lineEnd: imp.lineEnd,
-      codeSnippet: imp.codeSnippet ? pdfText(imp.codeSnippet) : undefined,
-      proposedFix: imp.proposedFix ? pdfText(imp.proposedFix) : undefined,
+      codeSnippet: imp.codeSnippet ? clipCode(pdfText(imp.codeSnippet)) : undefined,
+      proposedFix: imp.proposedFix ? clipCode(pdfText(imp.proposedFix)) : undefined,
     };
   });
 }
@@ -639,7 +651,8 @@ function CodeBlock({
   filename: string;
   styles: Styles;
 }) {
-  const tokens = highlightCode(code, lang);
+  const clipped = clipCode(code);
+  const tokens = highlightCode(clipped, lang).filter((t) => t.text);
   return (
     <View style={styles.codeWindow}>
       <View style={styles.codeChrome}>
@@ -650,13 +663,17 @@ function CodeBlock({
         </View>
         <Text style={styles.codeFilename}>{filename}</Text>
       </View>
-      <Text style={styles.codeBody}>
-        {tokens.filter((t) => t.text).map((t, i) => (
-          <Text key={i} style={{ color: t.color }}>
-            {t.text}
-          </Text>
-        ))}
-      </Text>
+      {tokens.length > 180 ? (
+        <Text style={styles.codeBody}>{clipped}</Text>
+      ) : (
+        <Text style={styles.codeBody}>
+          {tokens.map((t, i) => (
+            <Text key={i} style={{ color: t.color }}>
+              {t.text}
+            </Text>
+          ))}
+        </Text>
+      )}
     </View>
   );
 }
@@ -674,7 +691,7 @@ function SectionHeader({
   // preventing the header from being orphaned at the bottom when the first
   // content block would wrap to the next page anyway.
   return (
-    <View minPresenceAhead={140} wrap={false}>
+    <View minPresenceAhead={80}>
       {kicker ? <Text style={styles.sectionKicker}>{kicker}</Text> : null}
       <Text style={styles.sectionTitle}>{title}</Text>
       <View style={styles.sectionRule} />
