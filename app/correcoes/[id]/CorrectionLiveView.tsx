@@ -61,13 +61,16 @@ export function CorrectionLiveView({ submissionId }: { submissionId: string }) {
   }, [submissionId]);
 
   useEffect(() => {
+    if (data?.status === 'corrected' || data?.status === 'failed') return;
+
     fetchStatus();
     const id = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
       setTick((t) => t + 1);
       fetchStatus();
     }, POLL_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [fetchStatus]);
+  }, [data?.status, fetchStatus]);
 
   const elapsed = Date.now() - startRef.current;
 

@@ -1,9 +1,10 @@
 /**
  * Automatic AI correction processor.
  *
- * Called from two places:
- *   1. Submit route (via waitUntil) — runs immediately after student submits.
- *   2. Cron safety net — picks up anything stuck in queued/processing.
+ * Called from two places (só quando tem exercício pra resolver — sem cron
+ * periódico, que mantinha o Neon acordado 24/7):
+ *   1. Submit route (via waitUntil) — roda na hora do envio.
+ *   2. Status poll do aluno — se a submission ficou órfã em queued/processing.
  *
  * Runs with service-role DB context (no monitor session required).
  *
@@ -213,8 +214,9 @@ export async function processSubmissionWithAI(submissionId: string): Promise<
 }
 
 /**
- * Find and process all submissions that are stuck (queued for any duration, or
- * processing for longer than STALE_PROCESSING_MINUTES). Called by the safety cron.
+ * Find and process stuck submissions. Manual/ops only — o cron da Vercel foi
+ * desligado pra o Neon poder suspender. O retry automático ficou no poll de
+ * status enquanto o aluno espera a correção.
  *
  * Processes sequentially to avoid hammering the GitHub + OpenAI APIs.
  */

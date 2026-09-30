@@ -1,8 +1,9 @@
 /**
- * Safety cron — picks up submissions stuck in queued/processing and retries.
+ * Pickup manual de submissions órfãs (queued/processing).
  *
- * Configured in vercel.json to run every 5 minutes. Vercel's cron sends
- * `Authorization: Bearer ${CRON_SECRET}`; we verify before processing.
+ * Sem schedule na Vercel: o cron de 5 em 5 min acordava o Neon o mês inteiro.
+ * Pipeline normal: submit → waitUntil. Retry: poll de /status enquanto o
+ * aluno espera. Este endpoint fica pra ops (Authorization: Bearer CRON_SECRET).
  *
  * When CRON_SECRET is not set (local dev), this endpoint rejects all requests.
  */
